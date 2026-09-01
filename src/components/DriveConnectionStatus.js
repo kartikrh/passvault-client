@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 import { Alert, Badge } from "reactstrap";
-import { fetchDriveStatus, connectDrive } from "@/lib/drive";
+import { connectDrive } from "@/lib/drive";
 
 // The drive.appdata scope requested from this domain's White Label Google
 // client (whitelabel.googleKey) -- the same "Web application" OAuth client
@@ -26,6 +26,9 @@ function ConnectButton({ onConnected }) {
       setError(null);
       setIsConnecting(true);
       try {
+        // connectDrive's own { driveConnected: true } response is proof
+        // enough -- no need to re-query GET /vault/auth/drive/status right
+        // after to confirm what the POST itself already confirmed.
         await connectDrive(code);
         onConnected();
       } catch (err) {
@@ -56,41 +59,23 @@ function ConnectButton({ onConnected }) {
   );
 }
 
-// Whether a client has granted Drive access is server-side state (a
-// refresh token stored against tblClient, set only once POST
-// /vault/auth/drive/connect succeeds) -- Google Sign-In alone never grants
-// it, so this always asks the API rather than inferring anything from the
-// sign-in step.
-export default function DriveConnectionStatus({ googleClientId, onConnected }) {
-  const [status, setStatus] = useState("loading"); // "loading" | "connected" | "disconnected" | "error"
+// connected: sourced from the caller's own client.driveConnected (see
+// useProfile/useOnboardingStatus) rather than this component checking GET
+// /vault/auth/drive/status itself -- every call site already has that from
+// its own profile fetch, so re-checking here would just be a second,
+// redundant request. onConnected fires once a brand-new connection
+// succeeds, so the caller can patch its own client.driveConnected in sync
+// (see OnboardingWizardModal/accounts/page.js).
+export default function DriveConnectionStatus({ googleClientId, connected, onConnected }) {
+  // Gives instant visual feedback the moment a new connection succeeds,
+  // without waiting on the caller's own state update to flow back down as
+  // a prop -- `connected` becoming true later is a harmless no-op overlap.
+  const [justConnected, setJustConnected] = useState(false);
+  const isConnected = connected || justConnected;
 
-  // Mount-time load: state already starts "loading", so the effect only
-  // needs to resolve it -- no synchronous setState in the effect body.
-  useEffect(() => {
-    let cancelled = false;
-    fetchDriveStatus()
-      .then((connected) => {
-        if (!cancelled) setStatus(connected ? "connected" : "disconnected");
-      })
-      .catch(() => {
-        if (!cancelled) setStatus("error");
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Re-check after the user just finished the consent popup -- this one's
-  // an event-callback, not an effect body, so setting "loading" up front
-  // here is fine.
-  const loadStatus = () => {
-    setStatus("loading");
-    fetchDriveStatus()
-      .then((connected) => {
-        setStatus(connected ? "connected" : "disconnected");
-        if (connected) onConnected?.();
-      })
-      .catch(() => setStatus("error"));
+  const handleConnected = () => {
+    setJustConnected(true);
+    onConnected?.();
   };
 
   return (
@@ -100,18 +85,14 @@ export default function DriveConnectionStatus({ googleClientId, onConnected }) {
         <div className="text-muted small">Your vault is stored as one encrypted file in your own Drive.</div>
       </div>
 
-      {status === "loading" ? (
-        <Badge color="secondary">Checking...</Badge>
-      ) : status === "connected" ? (
+      {isConnected ? (
         <Badge color="success">
           <i className="bx bx-check me-1" />
           Connected
         </Badge>
-      ) : status === "error" ? (
-        <Badge color="secondary">Unable to check status</Badge>
       ) : googleClientId ? (
         <GoogleOAuthProvider clientId={googleClientId}>
-          <ConnectButton onConnected={loadStatus} />
+          <ConnectButton onConnected={handleConnected} />
         </GoogleOAuthProvider>
       ) : (
         <Badge color="warning">Not connected (Drive OAuth not configured)</Badge>

@@ -3,89 +3,65 @@
 import { useMemo, useState } from "react";
 import { Input } from "reactstrap";
 import EditAccountForm from "@/components/EditAccountForm";
+import RevealAccountModal from "@/components/RevealAccountModal";
+import StepUpGateModal from "@/components/StepUpGateModal";
+import ConfirmModal from "@/components/ConfirmModal";
 
-const COLUMN_COUNT = 5;
-
+// Only name + tags are ever rendered here -- username, password, and
+// security questions stay out of the DOM entirely until the eye icon's
+// 2FA step-up (RevealAccountModal) succeeds. The decrypted data is still
+// sitting in this page's `entries` state either way (see useVault) since
+// the whole vault is one client-decrypted blob; this is a display
+// restriction, not a smaller server response.
 function matchesSearch(entry, search) {
   if (!search) return true;
   const needle = search.toLowerCase();
-  const haystacks = [entry.title, entry.username, ...(entry.tags || [])];
+  const haystacks = [entry.title, ...(entry.tags || [])];
   return haystacks.some((value) => value && value.toLowerCase().includes(needle));
 }
 
-function SecurityQuestionItem({ question, answer }) {
-  const [visible, setVisible] = useState(false);
-
-  return (
-    <div className="d-flex align-items-center justify-content-between gap-2 py-1">
-      <div className="text-truncate small">
-        <span className="text-muted">{question}</span>
-      </div>
-      <div className="d-flex align-items-center gap-2 flex-shrink-0">
-        <code className="small">{visible ? answer : "••••••••"}</code>
-        <button
-          type="button"
-          className="btn btn-light btn-sm border"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? "Hide answer" : "Show answer"}
-        >
-          <i className={`bx ${visible ? "bx-hide" : "bx-show"}`} />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-function AccountTableRow({ entry, onUpdate }) {
-  const [visible, setVisible] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [showQuestions, setShowQuestions] = useState(false);
+function AccountTableRow({ entry, onUpdate, onDelete, popupIntervalSeconds, otpEnabled }) {
+  const [isVerifyingEdit, setIsVerifyingEdit] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const hasQuestions = entry.securityQuestions?.length > 0;
-
-  const copyPassword = async () => {
-    try {
-      await navigator.clipboard.writeText(entry.password);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch {
-      // Clipboard API unavailable (e.g. insecure context) -- nothing to recover from.
-    }
-  };
+  const [isRevealing, setIsRevealing] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  const [isVerifyingDelete, setIsVerifyingDelete] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState(null);
 
   const handleSave = async (fields) => {
     await onUpdate(entry.id, fields);
     setIsEditing(false);
   };
 
+  const handleEditVerified = () => {
+    setIsVerifyingEdit(false);
+    setIsEditing(true);
+  };
+
+  const handleDeleteConfirmed = () => {
+    setIsConfirmingDelete(false);
+    setIsVerifyingDelete(true);
+  };
+
+  const handleDeleteVerified = async () => {
+    setIsVerifyingDelete(false);
+    setIsDeleting(true);
+    setDeleteError(null);
+    try {
+      await onDelete(entry.id, entry.type);
+    } catch (err) {
+      setDeleteError(err?.message || "Could not delete this account. Please try again.");
+      setIsDeleting(false);
+    }
+    // No finally-set-false-on-success: a successful delete removes this
+    // row from `entries` entirely, so there's nothing left to un-disable.
+  };
+
   return (
     <>
       <tr>
         <td className="fw-semibold">{entry.title}</td>
-        <td className="text-muted">{entry.username || "—"}</td>
-        <td>
-          <div className="d-flex align-items-center gap-2">
-            <code className="small text-truncate" style={{ maxWidth: 140, display: "inline-block" }}>
-              {visible ? entry.password : "••••••••"}
-            </code>
-            <button
-              type="button"
-              className="btn btn-light btn-sm border"
-              onClick={() => setVisible((v) => !v)}
-              aria-label={visible ? "Hide password" : "Show password"}
-            >
-              <i className={`bx ${visible ? "bx-hide" : "bx-show"}`} />
-            </button>
-            <button
-              type="button"
-              className="btn btn-light btn-sm border"
-              onClick={copyPassword}
-              aria-label="Copy password"
-            >
-              {copied ? <i className="bx bx-check text-success" /> : <i className="bx bx-copy" />}
-            </button>
-          </div>
-        </td>
         <td>
           {entry.tags?.length ? (
             <div className="d-flex flex-wrap gap-1">
@@ -104,43 +80,85 @@ function AccountTableRow({ entry, onUpdate }) {
             <button
               type="button"
               className="btn btn-light btn-sm border"
-              onClick={() => setIsEditing(true)}
+              onClick={() => setIsRevealing(true)}
+              aria-label="View account details"
+            >
+              <i className="bx bx-show" />
+            </button>
+            <button
+              type="button"
+              className="btn btn-light btn-sm border"
+              onClick={() => setIsVerifyingEdit(true)}
               aria-label="Edit account"
             >
               <i className="bx bx-edit" />
             </button>
-            {hasQuestions ? (
-              <button
-                type="button"
-                className="btn btn-light btn-sm border"
-                onClick={() => setShowQuestions((v) => !v)}
-                aria-label={showQuestions ? "Hide security questions" : "Show security questions"}
-              >
-                <i className={`bx ${showQuestions ? "bx-chevron-up" : "bx-chevron-down"}`} />
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="btn btn-light btn-sm border text-danger"
+              onClick={() => setIsConfirmingDelete(true)}
+              disabled={isDeleting}
+              aria-label="Delete account"
+            >
+              <i className="bx bx-trash" />
+            </button>
           </div>
         </td>
       </tr>
 
-      {hasQuestions && showQuestions ? (
+      {deleteError ? (
         <tr>
-          <td colSpan={COLUMN_COUNT} className="bg-light">
-            {entry.securityQuestions.map((q, index) => (
-              <SecurityQuestionItem key={index} question={q.question} answer={q.answer} />
-            ))}
+          <td colSpan={3} className="text-danger small border-0 pt-0 pb-2">
+            {deleteError}
           </td>
         </tr>
+      ) : null}
+
+      {isConfirmingDelete ? (
+        <ConfirmModal
+          title="Delete this account?"
+          body={`"${entry.title}" will be permanently removed from your vault. This can't be undone.`}
+          confirmLabel="Delete"
+          onConfirm={handleDeleteConfirmed}
+          onCancel={() => setIsConfirmingDelete(false)}
+        />
+      ) : null}
+
+      {isVerifyingDelete ? (
+        <StepUpGateModal
+          description="Enter your authenticator code to delete this account."
+          otpEnabled={otpEnabled}
+          onVerified={handleDeleteVerified}
+          onCancel={() => setIsVerifyingDelete(false)}
+        />
+      ) : null}
+
+      {isVerifyingEdit ? (
+        <StepUpGateModal
+          description="Enter your authenticator code to edit this account."
+          otpEnabled={otpEnabled}
+          onVerified={handleEditVerified}
+          onCancel={() => setIsVerifyingEdit(false)}
+        />
       ) : null}
 
       {isEditing ? (
         <EditAccountForm entry={entry} onSave={handleSave} onCancel={() => setIsEditing(false)} />
       ) : null}
+
+      {isRevealing ? (
+        <RevealAccountModal
+          entry={entry}
+          otpEnabled={otpEnabled}
+          popupIntervalSeconds={popupIntervalSeconds}
+          onClose={() => setIsRevealing(false)}
+        />
+      ) : null}
     </>
   );
 }
 
-export default function VaultAccountList({ entries, onUpdate }) {
+export default function VaultAccountList({ entries, onUpdate, onDelete, popupIntervalSeconds, otpEnabled }) {
   const [search, setSearch] = useState("");
   const filtered = useMemo(() => entries.filter((entry) => matchesSearch(entry, search)), [entries, search]);
 
@@ -153,7 +171,7 @@ export default function VaultAccountList({ entries, onUpdate }) {
       <Input
         value={search}
         onChange={(e) => setSearch(e.target.value)}
-        placeholder="Filter by name, username, or tag"
+        placeholder="Filter by name or tag"
         className="mb-3"
       />
 
@@ -163,15 +181,20 @@ export default function VaultAccountList({ entries, onUpdate }) {
             <thead>
               <tr className="text-muted small">
                 <th>Name</th>
-                <th>Username</th>
-                <th>Password</th>
                 <th>Tags</th>
                 <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {filtered.map((entry) => (
-                <AccountTableRow key={entry.id} entry={entry} onUpdate={onUpdate} />
+                <AccountTableRow
+                  key={entry.id}
+                  entry={entry}
+                  onUpdate={onUpdate}
+                  onDelete={onDelete}
+                  popupIntervalSeconds={popupIntervalSeconds}
+                  otpEnabled={otpEnabled}
+                />
               ))}
             </tbody>
           </table>

@@ -9,15 +9,13 @@ import { useWhitelabel } from "@/lib/useWhitelabel";
 import { useVault } from "@/lib/useVault";
 import DashboardHeader from "@/components/DashboardHeader";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
-import AddAccountForm from "@/components/AddAccountForm";
-import VaultAccountList from "@/components/VaultAccountList";
-import AccountListSkeleton from "@/components/AccountListSkeleton";
+import NotesGrid from "@/components/NotesGrid";
+import NotesGridSkeleton from "@/components/NotesGridSkeleton";
 import RefreshButton from "@/components/RefreshButton";
 
-// The vault's real home -- listing, filtering, adding, and editing saved
-// accounts. Gated the same way /dashboard used to be: vault key first (see
-// useVault), then Drive, before anything here can render.
-export default function AccountsPage() {
+// Google Keep-style notes, living in the same encrypted vault as Accounts
+// (see useVault) -- gated the same way: vault key first, then Drive.
+export default function NotesPage() {
   const router = useRouter();
   const { token, checked } = useAuthToken();
   const { client, setClient } = useProfile(!!token);
@@ -25,11 +23,11 @@ export default function AccountsPage() {
   const {
     vaultKeyReady,
     driveConnected,
-    accounts,
+    notes,
     loading,
     error,
-    addAccount,
-    updateAccount,
+    addNote,
+    updateNote,
     deleteEntry,
     onDriveConnected,
     refresh,
@@ -41,10 +39,9 @@ export default function AccountsPage() {
     }
   }, [checked, token, router]);
 
-  // Patches the profile's driveConnected in sync with useVault's own
-  // gating state -- keeps DashboardHeader's nav-visibility (which reads
-  // client.driveConnected via useOnboardingStatus) correct without waiting
-  // on a fresh profile fetch.
+  // Same reasoning as accounts/page.js's handleDriveConnected -- keeps
+  // client.driveConnected (and DashboardHeader's nav-visibility off of it)
+  // in sync without a fresh profile fetch.
   const handleDriveConnected = () => {
     setClient((prev) => prev && { ...prev, driveConnected: true });
     onDriveConnected();
@@ -59,8 +56,6 @@ export default function AccountsPage() {
       <Container fluid className="py-5 px-4">
         {vaultKeyReady === null ? <p className="text-muted">Checking your vault...</p> : null}
 
-        {/* Drive must be connected before a vault can exist -- once it is,
-            this prompt has nothing left to say and gets out of the way. */}
         {vaultKeyReady && driveConnected === false ? (
           <Card className="mb-3">
             <CardBody className="p-4">
@@ -81,24 +76,15 @@ export default function AccountsPage() {
           <Card>
             <CardBody className="p-4">
               <div className="d-flex align-items-center justify-content-between mb-3">
-                <h5 className="mb-0">Your accounts</h5>
-                <div className="d-flex align-items-center gap-2">
-                  <RefreshButton onRefresh={refresh} />
-                  <AddAccountForm onAdd={addAccount} />
-                </div>
+                <h5 className="mb-0">Your notes</h5>
+                <RefreshButton onRefresh={refresh} />
               </div>
 
               {error ? <p className="text-danger small">{error}</p> : null}
               {loading ? (
-                <AccountListSkeleton />
+                <NotesGridSkeleton />
               ) : (
-                <VaultAccountList
-                  entries={accounts}
-                  onUpdate={updateAccount}
-                  onDelete={deleteEntry}
-                  popupIntervalSeconds={client?.popupIntervalSeconds}
-                  otpEnabled={client?.otpEnabled}
-                />
+                <NotesGrid entries={notes} onAdd={addNote} onUpdate={updateNote} onDelete={deleteEntry} />
               )}
             </CardBody>
           </Card>

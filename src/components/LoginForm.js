@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useFormik } from "formik";
@@ -22,6 +22,28 @@ import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 import axiosInstance from "@/lib/api";
 import { useWhitelabel } from "@/lib/useWhitelabel";
+import { useGeolocation } from "@/lib/useGeolocation";
+import TwoFactorChallenge from "@/components/TwoFactorChallenge";
+import LocationRequiredModal from "@/components/LocationRequiredModal";
+
+// Same hydration-safe pattern as useAuthToken.js: getServerSnapshot always
+// false (SSR/first client paint can't know the query string's redirect
+// reason), getSnapshot reads the real one once mounted. Set by
+// useIdleLogout's redirect (?reason=idle).
+const noopSubscribe = () => () => {};
+const getIdleReasonSnapshot = () => new URLSearchParams(window.location.search).get("reason") === "idle";
+const getIdleReasonServerSnapshot = () => false;
+
+// Same pattern, set by useVpnGuard's redirect (?reason=vpn) when a VPN was
+// detected mid-session -- see DashboardHeader's handleVpnLogout.
+const getVpnReasonSnapshot = () => new URLSearchParams(window.location.search).get("reason") === "vpn";
+const getVpnReasonServerSnapshot = () => false;
+
+// Same pattern again, set by AccountDangerZone's own redirects right after
+// a successful Suspend/Delete Account action.
+const getSuspendedReasonSnapshot = () => new URLSearchParams(window.location.search).get("reason") === "suspended";
+const getDeletedReasonSnapshot = () => new URLSearchParams(window.location.search).get("reason") === "deleted";
+const getReasonServerSnapshot = () => false;
 
 // Registered in cmsComponentRegistry.js under linkURL "login" -- resolved
 // and rendered by CmsPageView (src/components/CmsPageView.js) exactly like
@@ -34,6 +56,41 @@ export default function LoginForm() {
   const [errorMessage, setErrorMessage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [captchaToken, setCaptchaToken] = useState(null);
+  // Read via useSyncExternalStore + window.location rather than Next.js's
+  // useSearchParams, so this doesn't need its own Suspense boundary.
+  const idleLogoutNotice = useSyncExternalStore(
+    noopSubscribe,
+    getIdleReasonSnapshot,
+    getIdleReasonServerSnapshot
+  );
+  const vpnLogoutNotice = useSyncExternalStore(
+    noopSubscribe,
+    getVpnReasonSnapshot,
+    getVpnReasonServerSnapshot
+  );
+  const suspendedNotice = useSyncExternalStore(
+    noopSubscribe,
+    getSuspendedReasonSnapshot,
+    getReasonServerSnapshot
+  );
+  const deletedNotice = useSyncExternalStore(
+    noopSubscribe,
+    getDeletedReasonSnapshot,
+    getReasonServerSnapshot
+  );
+  // Set once /login or /google responds with otpRequired instead of a
+  // token -- while this is non-null the card shows TwoFactorChallenge
+  // instead of the credentials form.
+  const [otpChallenge, setOtpChallenge] = useState(null);
+
+  // Mandatory, not optional -- both password login and Google sign-in are
+  // blocked behind LocationRequiredModal (rendered at the bottom of this
+  // component) until status is "granted". PassVaultapi's loginService/
+  // googleSignInService/registerService independently re-check this
+  // server-side (requireGeolocation), so this gate is about UX, not the
+  // only enforcement.
+  const geolocation = useGeolocation();
+  const locationGranted = geolocation.status === "granted";
 
   // Both driven by the admin's White Label config (PassVaultpanel > White
   // Label), not hardcoded here -- an operator can flip either on/off, or
@@ -72,15 +129,26 @@ export default function LoginForm() {
         setErrorMessage("Please complete the reCAPTCHA challenge.");
         return;
       }
+      if (!locationGranted) {
+        // The modal is already showing in this case -- nothing more to do
+        // here than refuse to submit without coordinates.
+        return;
+      }
       setErrorMessage(null);
       setIsSubmitting(true);
       try {
-        await axiosInstance.post("/vault/auth/login", {
+        const { result } = await axiosInstance.post("/vault/auth/login", {
           identifier: values.identifier,
           password: values.password,
+          latitude: geolocation.coords.latitude,
+          longitude: geolocation.coords.longitude,
           ...(recaptchaRequired ? { recaptchaToken: captchaToken } : {}),
         });
-        router.push("/dashboard");
+        if (result?.otpRequired) {
+          setOtpChallenge(result);
+        } else {
+          router.push("/dashboard");
+        }
       } catch (err) {
         setErrorMessage(err?.message || "Unable to sign in. Please try again.");
       } finally {
@@ -95,10 +163,18 @@ export default function LoginForm() {
     try {
       // This one is live today -- PassVaultapi's POST /vault/auth/google
       // already verifies the ID token and finds-or-creates the client.
-      await axiosInstance.post("/vault/auth/google", {
+      // The Google button itself only renders once locationGranted is true
+      // (see below), so geolocation.coords is guaranteed here.
+      const { result } = await axiosInstance.post("/vault/auth/google", {
         idToken: credentialResponse.credential,
+        latitude: geolocation.coords.latitude,
+        longitude: geolocation.coords.longitude,
       });
-      router.push("/dashboard");
+      if (result?.otpRequired) {
+        setOtpChallenge(result);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (err) {
       setErrorMessage(err?.message || "Google sign-in failed. Please try again.");
     } finally {
@@ -124,7 +200,41 @@ export default function LoginForm() {
                     <h3 className="text-primary fw-bold mb-0">PassVault</h3>
                   </Link>
                 </div>
+                {otpChallenge ? (
+                  <TwoFactorChallenge
+                    pendingToken={otpChallenge.pendingToken}
+                    qrCode={otpChallenge.qrCode}
+                    otpType={otpChallenge.otpType}
+                    onVerified={() => router.push("/dashboard")}
+                    onCancel={() => setOtpChallenge(null)}
+                  />
+                ) : (
+                  <>
                 <h4 className="font-size-18 text-muted mt-2 text-center mb-4">Welcome back</h4>
+
+                {idleLogoutNotice ? (
+                  <Alert color="info" className="py-2 px-3">
+                    You were signed out after a period of inactivity. Please sign in again.
+                  </Alert>
+                ) : null}
+
+                {vpnLogoutNotice ? (
+                  <Alert color="warning" className="py-2 px-3">
+                    You were signed out because a VPN was detected. Please disable your VPN, then sign in again.
+                  </Alert>
+                ) : null}
+
+                {suspendedNotice ? (
+                  <Alert color="warning" className="py-2 px-3">
+                    Your account has been suspended. Signing back in reactivates it right away.
+                  </Alert>
+                ) : null}
+
+                {deletedNotice ? (
+                  <Alert color="info" className="py-2 px-3">
+                    Your account has been deleted.
+                  </Alert>
+                ) : null}
 
                 <Form
                   className="form-horizontal"
@@ -180,12 +290,16 @@ export default function LoginForm() {
                   ) : null}
 
                   <div className="d-grid mt-3">
-                    <button className="btn btn-primary waves-effect waves-light" type="submit" disabled={isSubmitting}>
+                    <button
+                      className="btn btn-primary waves-effect waves-light"
+                      type="submit"
+                      disabled={isSubmitting || !locationGranted}
+                    >
                       {isSubmitting ? "Signing in..." : "Log In"}
                     </button>
                   </div>
 
-                  {googleEnabled ? (
+                  {googleEnabled && locationGranted ? (
                     <div className="mt-4">
                       <hr className="my-4" />
                       <div ref={googleButtonWrapperRef} className="w-100">
@@ -203,11 +317,19 @@ export default function LoginForm() {
                     </div>
                   ) : null}
                 </Form>
+                  </>
+                )}
               </CardBody>
             </Card>
           </Col>
         </Row>
       </Container>
+      <LocationRequiredModal
+        isOpen={!locationGranted && geolocation.status !== "checking"}
+        status={geolocation.status}
+        error={geolocation.error}
+        onEnableLocation={geolocation.request}
+      />
     </div>
   );
 }

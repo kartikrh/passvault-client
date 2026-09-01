@@ -5,6 +5,14 @@ export const fetchProfile = async () => {
   return result?.client || null;
 };
 
+// Wider field set (adds mobileNo/address) than fetchProfile -- only the
+// /profile page needs those (see ProfileForm), so every other page keeps
+// using the lighter fetchProfile via useProfile.
+export const fetchFullProfile = async () => {
+  const { result } = await axiosInstance.get("/vault/auth/profile/full");
+  return result?.client || null;
+};
+
 // All fields optional -- pass only what changed. Username uniqueness (and
 // the real error message) is enforced server-side (PassVaultapi's
 // updateProfileService + sql/vault/003_client_username.sql's unique index);

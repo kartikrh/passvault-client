@@ -34,7 +34,7 @@ export default function HomeLanding({ page }) {
   return (
     <>
       <section className="bg-light">
-        <Container className="py-5 text-center">
+        <Container fluid className="py-5 px-4 text-center">
           <h1 className="display-5 fw-bold mb-3">
             {page?.pageHeading || "Simple, Secure & Private"}
           </h1>
@@ -53,7 +53,7 @@ export default function HomeLanding({ page }) {
         </Container>
       </section>
 
-      <Container className="py-5">
+      <Container fluid className="py-5 px-4">
         <Row className="g-4">
           {FEATURES.map((feature) => (
             <Col key={feature.title} sm={6} lg={3}>
@@ -70,7 +70,7 @@ export default function HomeLanding({ page }) {
       </Container>
 
       <section className="bg-primary bg-opacity-10">
-        <Container className="py-5 text-center">
+        <Container fluid className="py-5 px-4 text-center">
           <h3 className="fw-bold mb-2">Ready to take control of your passwords?</h3>
           <p className="text-muted mb-4">
             Create your PassVault account and store your first credential in minutes.

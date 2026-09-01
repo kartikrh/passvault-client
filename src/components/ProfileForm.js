@@ -4,6 +4,10 @@ import { useState } from "react";
 import { Alert, FormGroup, Input, Label } from "reactstrap";
 import { updateProfile } from "@/lib/profile";
 
+// Name + Username only -- Mobile number/Address live in their own card
+// (see ContactInfoForm.js) with their own independent save, both on the
+// profile page and in OnboardingWizardModal's first setup step.
+//
 // Username uniqueness (case-insensitive, across every client -- see
 // sql/vault/003_client_username.sql's index on tblClient) is enforced
 // server-side; this form just surfaces whatever PUT /vault/auth/profile
@@ -15,8 +19,6 @@ import { updateProfile } from "@/lib/profile";
 export default function ProfileForm({ client, onUpdated }) {
   const [name, setName] = useState(client?.name || "");
   const [username, setUsername] = useState(client?.username || "");
-  const [mobileNo, setMobileNo] = useState(client?.mobileNo || "");
-  const [address, setAddress] = useState(client?.address || "");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
@@ -29,7 +31,7 @@ export default function ProfileForm({ client, onUpdated }) {
     setSuccess(false);
     setIsSaving(true);
     try {
-      const updatedClient = await updateProfile({ name, username, mobileNo, address });
+      const updatedClient = await updateProfile({ name, username });
       onUpdated?.(updatedClient);
       setSuccess(true);
     } catch (err) {
@@ -69,28 +71,11 @@ export default function ProfileForm({ client, onUpdated }) {
         </div>
       </FormGroup>
 
-      <FormGroup>
-        <Label className="form-label">Mobile number</Label>
-        <Input
-          value={mobileNo}
-          onChange={(e) => setMobileNo(e.target.value)}
-          placeholder="e.g. +1 555 123 4567"
-        />
-      </FormGroup>
-
-      <FormGroup>
-        <Label className="form-label">Address</Label>
-        <Input
-          type="textarea"
-          value={address}
-          onChange={(e) => setAddress(e.target.value)}
-          placeholder="Street, city, state, country"
-        />
-      </FormGroup>
-
-      <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
-        {isSaving ? "Saving..." : "Save changes"}
-      </button>
+      {!usernameLocked ? (
+        <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>
+          {isSaving ? "Saving..." : "Save changes"}
+        </button>
+      ) : null}
     </form>
   );
 }

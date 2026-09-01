@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Alert, FormGroup, Input, Label, Modal, ModalBody, ModalFooter, ModalHeader } from "reactstrap";
 import PasswordStrengthMeter from "@/components/PasswordStrengthMeter";
+import PasswordInput from "@/components/PasswordInput";
 import SecurityQuestionsEditor from "@/components/SecurityQuestionsEditor";
 import TagsEditor from "@/components/TagsEditor";
 
@@ -77,7 +78,7 @@ export default function EditAccountForm({ entry, onSave, onCancel }) {
 
           <FormGroup>
             <Label className="form-label">Password</Label>
-            <Input value={password} onChange={(e) => setPassword(e.target.value)} required />
+            <PasswordInput value={password} onChange={(e) => setPassword(e.target.value)} required />
             <PasswordStrengthMeter password={password} />
           </FormGroup>
 

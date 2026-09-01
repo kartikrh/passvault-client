@@ -8,6 +8,8 @@ import * as Yup from "yup";
 import { Alert, Card, CardBody, Col, Container, Form, FormFeedback, Input, Label, Row } from "reactstrap";
 
 import axiosInstance from "@/lib/api";
+import TwoFactorChallenge from "@/components/TwoFactorChallenge";
+import { OTPType } from "@/lib/otpConstants";
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -17,6 +19,11 @@ function VerifyEmailContent() {
   const [status, setStatus] = useState(token ? "verifying" : "missing");
   const [errorMessage, setErrorMessage] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Set once /setPassword succeeds for a Google Authenticator client that
+  // hasn't scanned a QR code yet -- every client defaults to
+  // WrOTPEnable=true/otpType=GOOGLE_AUTHENTICATOR, so this is the normal
+  // path right after a brand-new signup finishes setting a password.
+  const [otpChallenge, setOtpChallenge] = useState(null);
 
   useEffect(() => {
     if (!token) return;
@@ -43,8 +50,16 @@ function VerifyEmailContent() {
       setErrorMessage(null);
       setIsSubmitting(true);
       try {
-        await axiosInstance.post("/vault/auth/setPassword", { newPassword: values.password });
-        router.push("/dashboard");
+        const { result } = await axiosInstance.post("/vault/auth/setPassword", { newPassword: values.password });
+        if (result?.otpEnabled && result?.otpType === OTPType.GOOGLE_AUTHENTICATOR && !result?.hasOtpSecret) {
+          // Client already has a session (verifyEmailService signs them in)
+          // -- fetch the QR code for the mandatory enrollment step before
+          // ever reaching the dashboard.
+          const { result: setup } = await axiosInstance.post("/vault/auth/2fa/setup");
+          setOtpChallenge(setup);
+        } else {
+          router.push("/dashboard");
+        }
       } catch (err) {
         setErrorMessage(err?.message || "Unable to set your password. Please try again.");
       } finally {
@@ -93,7 +108,16 @@ function VerifyEmailContent() {
                   </>
                 )}
 
-                {status === "verified" && (
+                {status === "verified" && otpChallenge && (
+                  <TwoFactorChallenge
+                    pendingToken={otpChallenge.pendingToken}
+                    qrCode={otpChallenge.qrCode}
+                    otpType={otpChallenge.otpType}
+                    onVerified={() => router.push("/dashboard")}
+                  />
+                )}
+
+                {status === "verified" && !otpChallenge && (
                   <>
                     <h4 className="font-size-18 text-muted mt-2 text-center">Email verified</h4>
                     <p className="mb-4 text-center">Set a password to finish creating your account.</p>

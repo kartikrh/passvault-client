@@ -8,6 +8,14 @@ export const fetchActivity = async (limit) => {
   return result?.activity || [];
 };
 
+// Fire-and-forget page-view report (see usePageViewLogging) -- there's no
+// server-side action to log this against the way account/note edits ride
+// along on putVaultDataService, since navigating between pages is a
+// client-only event.
+export const logPageView = async (page) => {
+  await axiosInstance.post("/vault/auth/activity/pageView", { page });
+};
+
 export const formatActivityDate = (isoString) =>
   new Date(isoString).toLocaleString(undefined, {
     dateStyle: "medium",

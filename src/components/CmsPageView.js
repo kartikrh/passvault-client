@@ -8,6 +8,8 @@ import { usePages } from "@/lib/usePages";
 import { resolvePageFromAlias } from "@/utils/navigation";
 import { CMS_COMPONENT_REGISTRY } from "./cmsComponentRegistry";
 import SiteNav from "./SiteNav";
+import HomeSkeleton from "./HomeSkeleton";
+import CmsPageSkeleton from "./CmsPageSkeleton";
 
 // Shared by both the root route (src/app/page.js, alias "home") and the
 // catch-all route (src/app/[...slug]/page.js) so "/" and "/home" always
@@ -23,12 +25,15 @@ export default function CmsPageView({ slug }) {
   }, [pageData]);
 
   if (isLoading) {
+    // slug[0] is known immediately from the route itself (root page.js
+    // always passes ["home"]) even though pages/pageData aren't resolved
+    // yet, so the skeleton can already match the real layout's shape
+    // instead of a generic spinner.
+    const isHome = slug?.[0] === "home";
     return (
       <>
         <SiteNav pages={pages} />
-        <Container className="py-5">
-          <p className="text-center text-muted">Loading...</p>
-        </Container>
+        {isHome ? <HomeSkeleton /> : <CmsPageSkeleton />}
       </>
     );
   }
@@ -37,7 +42,7 @@ export default function CmsPageView({ slug }) {
     return (
       <>
         <SiteNav pages={pages} />
-        <Container className="py-5">
+        <Container fluid className="py-5 px-4">
           <Card className="mx-auto" style={{ maxWidth: 480 }}>
             <CardBody className="p-4 text-center">
               <i className="bx bx-error-circle text-danger" style={{ fontSize: "2.5rem" }} />

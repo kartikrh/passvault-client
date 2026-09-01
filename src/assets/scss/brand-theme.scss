@@ -1,0 +1,67 @@
+// Page background follows the current White Label's brand color (derived
+// from its favicon in WhitelabelFavicon.js, written onto Bootstrap's own
+// --bs-primary) -- a light tint rather than the full saturated accent, so
+// text and white cards stay readable on top of it. The plain background
+// color is the fallback for browsers without color-mix() support; the
+// second declaration overrides it where supported.
+body {
+  min-height: 100vh;
+  background-color: #f8f9fa;
+  background-color: color-mix(in srgb, var(--bs-primary, #0bb197) 6%, #ffffff);
+}
+
+// .btn-primary's own --bs-btn-* tokens are compiled to a fixed hex at build
+// time (unlike .bg-primary/.text-primary/.border-primary, which already
+// read --bs-primary-rgb at runtime) -- overriding just those tokens isn't
+// enough, though: custom/components/_buttons.scss's `@mixin btn($bg)`
+// additionally hardcodes a literal background-color directly on
+// .btn-primary:hover/:focus/:active (bypassing --bs-btn-hover-bg entirely),
+// compiled into this same theme.scss bundle, so it silently wins over a
+// plain (non-!important) override at equal selector specificity. Setting
+// the actual properties with !important here -- after that mixin's output
+// in the cascade -- is what actually wins, on every state.
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus,
+.btn-primary:active,
+.btn-primary:disabled,
+.btn-primary.disabled {
+  background-color: var(--bs-primary) !important;
+  border-color: var(--bs-primary) !important;
+  color: var(--brand-accent-contrast, #fff) !important;
+}
+
+// Bootstrap bakes .form-control:focus's border-color/box-shadow to a
+// literal color at build time too (from $input-focus-border-color, itself
+// derived from $primary at compile time only) -- covers every text input
+// site-wide, including the OTP digit boxes (OtpDigitInput.js).
+.form-control:focus {
+  border-color: var(--bs-primary) !important;
+  box-shadow: 0 0 0 0.25rem color-mix(in srgb, var(--bs-primary) 25%, transparent) !important;
+}
+
+// Top nav links -- SiteNav's public menu and DashboardHeader's signed-in
+// menu both render on the brand-colored header bar and use
+// --brand-accent-contrast for their text/background tint (Bootstrap's
+// text-muted/link-hover utilities assume a light background), so the hover
+// state needs that same custom property rather than a Bootstrap class.
+.header-nav-link {
+  transition: background-color 0.15s ease, opacity 0.15s ease;
+
+  &:hover {
+    opacity: 1 !important;
+    background-color: color-mix(in srgb, var(--brand-accent-contrast, #ffffff) 14%, transparent) !important;
+  }
+}
+
+// Used by SiteNav's mobile menu strip: scrolling still works (drag/swipe),
+// but the native scrollbar is hidden since the left/right arrow buttons are
+// the actual, always-visible affordance for "there's more here."
+.hide-scrollbar {
+  scrollbar-width: none; // Firefox
+  -ms-overflow-style: none; // legacy Edge/IE
+
+  &::-webkit-scrollbar {
+    display: none; // Chrome/Safari/Edge (Chromium)
+  }
+}
