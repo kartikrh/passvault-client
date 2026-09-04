@@ -53,7 +53,13 @@ export const fetchVaultEntries = async () => {
 // Saves only the entries belonging to entryType's file (an Accounts write
 // never re-uploads Notes, and vice versa) and returns the full revisionIds
 // map with that one file's id refreshed.
-const saveVaultEntries = async ({ entries, revisionIds, entryId, entryType, changeType }) => {
+//
+// entryName: the entry's plaintext title, sent alongside the encrypted blob
+// purely so PassVaultapi's activity log can label this row -- the only part
+// of a vault entry the server ever sees in the clear (see
+// sql/vault/012_activity_log_entry_name.sql). Everything else (username,
+// password, note body, ...) stays inside `blob`.
+const saveVaultEntries = async ({ entries, revisionIds, entryId, entryType, changeType, entryName }) => {
   const vaultKey = await requireVaultKey();
   const vaultType = VAULT_FILE_KIND_BY_ENTRY_TYPE[entryType];
   const entriesForFile = entries.filter((entry) => VAULT_FILE_KIND_BY_ENTRY_TYPE[entry.type] === vaultType);
@@ -71,6 +77,7 @@ const saveVaultEntries = async ({ entries, revisionIds, entryId, entryType, chan
     expectedRevisionId: revisionIds?.[vaultType] ?? null,
     latitude: coords?.latitude ?? null,
     longitude: coords?.longitude ?? null,
+    entryName: entryName || null,
   });
   return { ...revisionIds, [vaultType]: result.revisionId };
 };
@@ -90,6 +97,7 @@ export const addVaultAccount = async ({ entries, revisionIds, account }) => {
     entryId: newEntry.id,
     entryType: VaultEntryType.ACCOUNT,
     changeType: VaultChangeType.CREATE,
+    entryName: newEntry.title,
   });
   return { entries: nextEntries, revisionIds: nextRevisionIds };
 };
@@ -107,6 +115,9 @@ export const updateVaultAccount = async ({ entries, revisionIds, entryId, accoun
     entryId,
     entryType: VaultEntryType.ACCOUNT,
     changeType: VaultChangeType.UPDATE,
+    // The post-edit title -- if the rename itself is what happened, the
+    // activity row should reflect the new name, not the old one.
+    entryName: nextEntries.find((entry) => entry.id === entryId)?.title,
   });
   return { entries: nextEntries, revisionIds: nextRevisionIds };
 };
@@ -126,6 +137,7 @@ export const addVaultNote = async ({ entries, revisionIds, note }) => {
     entryId: newEntry.id,
     entryType: VaultEntryType.NOTE,
     changeType: VaultChangeType.CREATE,
+    entryName: newEntry.title,
   });
   return { entries: nextEntries, revisionIds: nextRevisionIds };
 };
@@ -142,6 +154,7 @@ export const updateVaultNote = async ({ entries, revisionIds, entryId, note }) =
     entryId,
     entryType: VaultEntryType.NOTE,
     changeType: VaultChangeType.UPDATE,
+    entryName: nextEntries.find((entry) => entry.id === entryId)?.title,
   });
   return { entries: nextEntries, revisionIds: nextRevisionIds };
 };
@@ -152,6 +165,7 @@ export const updateVaultNote = async ({ entries, revisionIds, entryId, note }) =
 // putVaultDataService in services/vaultData.js), and it's also how this
 // picks which of the two files to re-save.
 export const deleteVaultEntry = async ({ entries, revisionIds, entryId, entryType }) => {
+  const deletedTitle = entries.find((entry) => entry.id === entryId)?.title;
   const nextEntries = entries.filter((entry) => entry.id !== entryId);
   const nextRevisionIds = await saveVaultEntries({
     entries: nextEntries,
@@ -159,6 +173,7 @@ export const deleteVaultEntry = async ({ entries, revisionIds, entryId, entryTyp
     entryId,
     entryType,
     changeType: VaultChangeType.DELETE,
+    entryName: deletedTitle,
   });
   return { entries: nextEntries, revisionIds: nextRevisionIds };
 };

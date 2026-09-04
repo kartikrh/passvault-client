@@ -6,22 +6,17 @@ import Link from "next/link";
 import { Card, CardBody, Container } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
 import { useProfile } from "@/lib/useProfile";
-import { useWhitelabel } from "@/lib/useWhitelabel";
-import { useOnboardingStatus } from "@/lib/useOnboardingStatus";
 import DashboardHeader from "@/components/DashboardHeader";
-import OnboardingWizardModal from "@/components/OnboardingWizardModal";
 
-// Landing spot after sign-in, and the one place that drives the mandatory
-// setup wizard (see useOnboardingStatus/OnboardingWizardModal) -- until
-// username, password, vault key, and Drive are all set up, this page shows
-// the wizard instead of the welcome card, and DashboardHeader hides the
-// Accounts/Notes nav links off the same status.
+// Landing spot after sign-in. The mandatory setup wizard (username/2FA/
+// vault key/Drive -- see useOnboardingStatus/OnboardingWizardModal) is
+// mounted once inside DashboardHeader itself now, so it gates every
+// protected page, not just this one; DashboardHeader also hides the
+// Accounts/Notes nav links off that same status.
 export default function DashboardPage() {
   const router = useRouter();
   const { token, checked } = useAuthToken();
   const { client, setClient } = useProfile(!!token);
-  const { whitelabel } = useWhitelabel();
-  const { step, stepIndex, stepCount, refresh } = useOnboardingStatus(client, !!token);
 
   useEffect(() => {
     if (checked && !token) {
@@ -33,17 +28,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-vh-100">
-      <DashboardHeader client={client} />
-
-      <OnboardingWizardModal
-        client={client}
-        step={step}
-        stepIndex={stepIndex}
-        stepCount={stepCount}
-        googleClientId={whitelabel?.googleKey}
-        onUpdated={setClient}
-        onRefresh={refresh}
-      />
+      <DashboardHeader client={client} onClientUpdated={setClient} />
 
       <Container fluid className="py-5 px-4">
         <Card className="mx-auto" style={{ maxWidth: 480 }}>

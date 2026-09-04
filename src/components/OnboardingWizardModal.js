@@ -1,23 +1,45 @@
 "use client";
 
-import { Modal, ModalBody, Progress } from "reactstrap";
+import { useEffect, useState } from "react";
+import { Alert, Modal, ModalBody, Progress } from "reactstrap";
+import axiosInstance from "@/lib/api";
 import { OnboardingStep } from "@/lib/useOnboardingStatus";
 import ProfileForm from "@/components/ProfileForm";
 import ChangePasswordForm from "@/components/ChangePasswordForm";
+import TwoFactorChallenge from "@/components/TwoFactorChallenge";
 import VaultKeySetup from "@/components/VaultKeySetup";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
 
 const STEP_LABELS = {
   [OnboardingStep.PROFILE]: "Profile",
+  [OnboardingStep.OTP_SETUP]: "Two-factor authentication",
   [OnboardingStep.VAULT_KEY]: "Vault key",
   [OnboardingStep.DRIVE]: "Google Drive",
 };
 
-// Mandatory, non-dismissible setup gate shown on /dashboard until username,
-// password, vault key, and Drive are all in place -- see useOnboardingStatus
-// for how `step` is derived (also reused by DashboardHeader to hide the
-// Accounts/Notes nav links until this same status is complete).
+// Mandatory, non-dismissible setup gate -- mounted once in DashboardHeader
+// (so it's present on every protected page, not just /dashboard) until
+// username/password, two-factor auth, vault key, and Drive are all in
+// place. See useOnboardingStatus for how `step` is derived (also reused by
+// DashboardHeader to hide the Accounts/Notes nav links until complete).
 export default function OnboardingWizardModal({ client, step, stepIndex, stepCount, googleClientId, onUpdated, onRefresh }) {
+  const [otpChallenge, setOtpChallenge] = useState(null);
+  const [otpError, setOtpError] = useState(null);
+
+  // Fetches a fresh QR code the moment this step becomes active -- covers
+  // both a client who never finished enrollment and one who reset their
+  // authenticator (TwoFactorSettings' Reset button) and left before
+  // re-scanning; either way hasOtpSecret is false and there's no pending
+  // QR to reuse.
+  useEffect(() => {
+    if (step !== OnboardingStep.OTP_SETUP) return;
+    setOtpError(null);
+    axiosInstance
+      .post("/vault/auth/2fa/setup")
+      .then(({ result }) => setOtpChallenge(result))
+      .catch((err) => setOtpError(err?.message || "Could not start two-factor setup. Please try again."));
+  }, [step]);
+
   if (!step) return null;
 
   return (
@@ -53,6 +75,24 @@ export default function OnboardingWizardModal({ client, step, stepIndex, stepCou
               />
             </div>
           ) : null
+        ) : null}
+
+        {step === OnboardingStep.OTP_SETUP ? (
+          <div>
+            <h6 className="fw-semibold mb-2 text-center">Set up two-factor authentication</h6>
+            {otpError ? <Alert color="danger">{otpError}</Alert> : null}
+            {/* No onCancel -- there's nothing valid to fall back to once
+                the old secret is gone (or was never set), so this can't be
+                dismissed short of finishing it. */}
+            {otpChallenge ? (
+              <TwoFactorChallenge
+                pendingToken={otpChallenge.pendingToken}
+                qrCode={otpChallenge.qrCode}
+                otpType={otpChallenge.otpType}
+                onVerified={onUpdated}
+              />
+            ) : null}
+          </div>
         ) : null}
 
         {step === OnboardingStep.VAULT_KEY ? (

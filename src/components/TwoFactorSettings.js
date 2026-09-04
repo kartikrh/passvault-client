@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { Badge } from "reactstrap";
+import { Badge, Modal, ModalBody } from "reactstrap";
 import axiosInstance from "@/lib/api";
 import { OTPType } from "@/lib/otpConstants";
 import TwoFactorChallenge from "./TwoFactorChallenge";
+import ConfirmModal from "./ConfirmModal";
 
 // Settings-page counterpart to the mandatory post-signup enrollment in
 // verify-email/page.js -- lets a client re-scan a QR code after losing
@@ -16,6 +17,11 @@ import TwoFactorChallenge from "./TwoFactorChallenge";
 // somehow reached here without having finished enrollment.
 export default function TwoFactorSettings({ client, onUpdated }) {
   const [otpChallenge, setOtpChallenge] = useState(null);
+  // "setup" (Set up now, cancellable) vs "reset" (Reset button, mandatory --
+  // the old secret is already gone server-side by the time this shows, so
+  // there's nothing left to cancel back to).
+  const [challengeSource, setChallengeSource] = useState(null);
+  const [confirmingReset, setConfirmingReset] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -24,6 +30,7 @@ export default function TwoFactorSettings({ client, onUpdated }) {
     setIsResetting(true);
     try {
       const { result } = await axiosInstance.post("/vault/auth/2fa/setup");
+      setChallengeSource("setup");
       setOtpChallenge(result);
     } catch (err) {
       setErrorMessage(err?.message || "Could not start setup. Please try again.");
@@ -32,35 +39,61 @@ export default function TwoFactorSettings({ client, onUpdated }) {
     }
   };
 
+  // Confirmed via the ConfirmModal below -- POST /vault/auth/2fa/reset
+  // clears the old secret and sends the Reset 2FA email (PassVaultapi's
+  // resetTwoFactorService) before this ever runs.
   const handleReset = async () => {
     setErrorMessage(null);
     setIsResetting(true);
     try {
       await axiosInstance.post("/vault/auth/2fa/reset");
       const { result } = await axiosInstance.post("/vault/auth/2fa/setup");
+      setChallengeSource("reset");
       setOtpChallenge(result);
     } catch (err) {
       setErrorMessage(err?.message || "Could not reset two-factor authentication. Please try again.");
     } finally {
       setIsResetting(false);
+      setConfirmingReset(false);
     }
   };
 
   const handleVerified = (updatedClient) => {
     setOtpChallenge(null);
+    setChallengeSource(null);
     onUpdated?.(updatedClient);
   };
 
   if (otpChallenge) {
-    return (
+    const challenge = (
       <TwoFactorChallenge
         pendingToken={otpChallenge.pendingToken}
         qrCode={otpChallenge.qrCode}
         otpType={otpChallenge.otpType}
         onVerified={handleVerified}
-        onCancel={() => setOtpChallenge(null)}
+        onCancel={
+          challengeSource === "reset"
+            ? undefined
+            : () => {
+                setOtpChallenge(null);
+                setChallengeSource(null);
+              }
+        }
       />
     );
+
+    // Reset just wiped the account's only valid code, so re-enrollment
+    // can't be dismissed here -- same non-dismissible pattern as the
+    // mandatory onboarding gate (OnboardingWizardModal).
+    if (challengeSource === "reset") {
+      return (
+        <Modal isOpen backdrop="static" keyboard={false} centered>
+          <ModalBody className="p-4">{challenge}</ModalBody>
+        </Modal>
+      );
+    }
+
+    return challenge;
   }
 
   if (!client.otpEnabled) {
@@ -92,8 +125,13 @@ export default function TwoFactorSettings({ client, onUpdated }) {
                 <i className="bx bx-check me-1" />
                 Enabled
               </Badge>
-              <button type="button" className="btn btn-outline-secondary btn-sm" disabled={isResetting} onClick={handleReset}>
-                {isResetting ? "Starting..." : "Reset"}
+              <button
+                type="button"
+                className="btn btn-danger btn-sm"
+                disabled={isResetting}
+                onClick={() => setConfirmingReset(true)}
+              >
+                Reset
               </button>
             </div>
           ) : (
@@ -108,6 +146,17 @@ export default function TwoFactorSettings({ client, onUpdated }) {
           </Badge>
         )}
       </div>
+
+      {confirmingReset ? (
+        <ConfirmModal
+          title="Reset Google Authenticator?"
+          body="This immediately turns off your current authenticator code and emails you a security notice. You'll need to scan a new QR code right away to finish -- two-factor authentication is required on every account."
+          confirmLabel={isResetting ? "Resetting..." : "Reset"}
+          isConfirming={isResetting}
+          onConfirm={handleReset}
+          onCancel={() => setConfirmingReset(false)}
+        />
+      ) : null}
     </div>
   );
 }

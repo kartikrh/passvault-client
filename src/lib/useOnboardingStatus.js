@@ -2,14 +2,23 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { getVaultKeyStatus } from "./vaultKey";
+import { OTPType } from "./otpConstants";
 
 export const OnboardingStep = {
   PROFILE: "profile",
+  OTP_SETUP: "otpSetup",
   VAULT_KEY: "vaultKey",
   DRIVE: "drive",
 };
 
-const STEP_ORDER = [OnboardingStep.PROFILE, OnboardingStep.VAULT_KEY, OnboardingStep.DRIVE];
+// OTP_SETUP sits right after PROFILE -- mirrors the order verify-email/page.js
+// already enforces right after a brand-new signup sets its password (2FA
+// enrollment happens there before /dashboard is ever reached). This is the
+// same gate reused for the case that matters here: a client mid-session
+// resets their authenticator (TwoFactorSettings' Reset button) and leaves
+// before finishing re-enrollment -- hasOtpSecret goes back to false, and
+// every other protected page (not just /profile) needs to block on it too.
+const STEP_ORDER = [OnboardingStep.PROFILE, OnboardingStep.OTP_SETUP, OnboardingStep.VAULT_KEY, OnboardingStep.DRIVE];
 
 // Vault-key status still needs its own check -- it lives in
 // tblClientVaultKey, not tblClient, so it can't ride along with the
@@ -40,6 +49,12 @@ export function useOnboardingStatus(client, enabled) {
   const statusKnown = !!client && vaultKeyReady !== null && driveConnected !== null;
 
   const needsProfile = !!client && (!client.username || !client.hasPassword);
+  // otpEnabled/otpType/hasOtpSecret all ride along on `client` already
+  // (CLIENT_SELECT_COLUMNS), same as driveConnected -- no extra fetch
+  // needed. A MAIL-otpType client has nothing to "set up" (there's no
+  // secret to scan), so this only ever fires for Google Authenticator.
+  const needsOtpSetup =
+    !!client && client.otpEnabled && client.otpType === OTPType.GOOGLE_AUTHENTICATOR && !client.hasOtpSecret;
   const needsVaultKey = vaultKeyReady === false;
   const needsDrive = driveConnected === false;
 
@@ -47,11 +62,13 @@ export function useOnboardingStatus(client, enabled) {
     ? null
     : needsProfile
       ? OnboardingStep.PROFILE
-      : needsVaultKey
-        ? OnboardingStep.VAULT_KEY
-        : needsDrive
-          ? OnboardingStep.DRIVE
-          : null;
+      : needsOtpSetup
+        ? OnboardingStep.OTP_SETUP
+        : needsVaultKey
+          ? OnboardingStep.VAULT_KEY
+          : needsDrive
+            ? OnboardingStep.DRIVE
+            : null;
 
   return {
     step,

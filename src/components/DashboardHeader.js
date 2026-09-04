@@ -12,16 +12,19 @@ import {
 import { setStoredToken } from "@/lib/api";
 import BrandLogo from "./BrandLogo";
 import { useOnboardingStatus } from "@/lib/useOnboardingStatus";
+import { useWhitelabel } from "@/lib/useWhitelabel";
 import { usePageViewLogging } from "@/lib/usePageViewLogging";
 import { useIdleLogout } from "@/lib/useIdleLogout";
 import { IDLE_TIMEOUT_MS } from "@/lib/idleConfig";
 import { useVpnGuard } from "@/lib/useVpnGuard";
+import OnboardingWizardModal from "./OnboardingWizardModal";
 
-// Profile lives only in the account dropdown below (Profile + Log out) --
-// not duplicated here as a separate nav link. Dashboard always shows (it's
-// where the setup wizard lives); Accounts/Notes only appear once
-// useOnboardingStatus reports everything is set up -- see dashboard/page.js
-// for the wizard that drives the same status to completion.
+// Profile and Recent Activity live only in the account dropdown below
+// (Profile, Recent Activity, Change password, Log out) -- not duplicated
+// here as separate nav links. Dashboard always shows; Accounts/Notes only
+// appear once useOnboardingStatus reports everything is set up -- see
+// OnboardingWizardModal below for the wizard that drives the same status
+// to completion.
 const NAV_LINKS = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/accounts", label: "Accounts", requiresOnboarding: true },
@@ -32,11 +35,21 @@ const NAV_LINKS = [
 // the public CMS-driven pages only and isn't mounted here (see
 // src/app/layout.js), so /dashboard and /profile need their own bar with
 // the menu + profile/logout affordance instead of reusing it.
-export default function DashboardHeader({ client }) {
+//
+// Also where the mandatory OnboardingWizardModal itself is mounted --
+// DashboardHeader is already present on every protected page, so this is
+// the one place that makes the gate (username/2FA/vault key/Drive) apply
+// site-wide instead of only on /dashboard. onClientUpdated is required
+// whenever a caller's client can be incomplete (every protected page
+// except ones that never render while onboarding could still be pending)
+// so the wizard's own form submissions (set username, verify 2FA, ...) can
+// patch the caller's client state, same contract as onUpdated elsewhere.
+export default function DashboardHeader({ client, onClientUpdated }) {
   const router = useRouter();
   const pathname = usePathname();
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const { isComplete: onboardingComplete } = useOnboardingStatus(client, !!client);
+  const { step, stepIndex, stepCount, isComplete: onboardingComplete, refresh } = useOnboardingStatus(client, !!client);
+  const { whitelabel } = useWhitelabel();
   const navLinks = NAV_LINKS.filter((link) => !link.requiresOnboarding || onboardingComplete);
   // Mounted here, once, rather than per-page -- DashboardHeader is present
   // on every protected page already.
@@ -127,6 +140,14 @@ export default function DashboardHeader({ client }) {
           <i className="bx bx-user me-2" />
           Profile
         </DropdownItem>
+        {/* Same onboarding gate the nav links use -- see NAV_LINKS'
+            requiresOnboarding above. */}
+        {onboardingComplete ? (
+          <DropdownItem tag={Link} href="/activity" active={pathname === "/activity"}>
+            <i className="bx bx-history me-2" />
+            Recent Activity
+          </DropdownItem>
+        ) : null}
         <DropdownItem tag={Link} href="/change-password" active={pathname === "/change-password"}>
           <i className="bx bx-lock-alt me-2" />
           Change password
@@ -140,27 +161,39 @@ export default function DashboardHeader({ client }) {
   );
 
   return (
-    <header
-      className="bg-primary"
-      style={{ position: "sticky", top: 0, zIndex: 1020, boxShadow: "0 1px 4px rgba(0, 0, 0, 0.15)" }}
-    >
-      <div className="container-fluid py-2 px-4">
-        {/* Top row, every breakpoint: logo, then (desktop only) the nav
-            links immediately beside it, then the profile dropdown pushed all
-            the way to the right via the nav's own me-md-auto -- on mobile
-            this keeps the avatar in the top-right corner instead of it
-            wrapping below the nav links into its own centered row. */}
-        <div className="d-flex align-items-center gap-2 gap-md-4">
-          <div className="flex-grow-1 flex-md-grow-0 d-flex justify-content-center justify-content-md-start">
-            <BrandLogo />
+    <>
+      <header
+        className="bg-primary"
+        style={{ position: "sticky", top: 0, zIndex: 1020, boxShadow: "0 1px 4px rgba(0, 0, 0, 0.15)" }}
+      >
+        <div className="container-fluid py-2 px-4">
+          {/* Top row, every breakpoint: logo, then (desktop only) the nav
+              links immediately beside it, then the profile dropdown pushed all
+              the way to the right via the nav's own me-md-auto -- on mobile
+              this keeps the avatar in the top-right corner instead of it
+              wrapping below the nav links into its own centered row. */}
+          <div className="d-flex align-items-center gap-2 gap-md-4">
+            <div className="flex-grow-1 flex-md-grow-0 d-flex justify-content-center justify-content-md-start">
+              <BrandLogo />
+            </div>
+            {renderNavLinks("d-none d-md-flex me-md-auto")}
+            {profileDropdown}
           </div>
-          {renderNavLinks("d-none d-md-flex me-md-auto")}
-          {profileDropdown}
-        </div>
 
-        {/* Second row, mobile only: the nav links, centered under the logo/avatar row. */}
-        {renderNavLinks("d-md-none justify-content-center pt-2")}
-      </div>
-    </header>
+          {/* Second row, mobile only: the nav links, centered under the logo/avatar row. */}
+          {renderNavLinks("d-md-none justify-content-center pt-2")}
+        </div>
+      </header>
+
+      <OnboardingWizardModal
+        client={client}
+        step={step}
+        stepIndex={stepIndex}
+        stepCount={stepCount}
+        googleClientId={whitelabel?.googleKey}
+        onUpdated={onClientUpdated}
+        onRefresh={refresh}
+      />
+    </>
   );
 }

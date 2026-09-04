@@ -1,6 +1,6 @@
 // Mirrors PassVaultapi's utilities/vaultConstants.js VaultActivityCodes --
 // just the values the client needs to know client-side, to decide what to
-// show alongside an activity row's refId in RecentActivity.
+// show alongside an activity row's refId on the /activity page.
 export const ActivityType = {
   ACCOUNT_CREATED: 110,
   ACCOUNT_UPDATED: 111,

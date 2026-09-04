@@ -26,7 +26,7 @@ export default function ChangePasswordPage() {
 
   return (
     <div className="min-vh-100">
-      <DashboardHeader client={client} />
+      <DashboardHeader client={client} onClientUpdated={setClient} />
 
       <Container className="py-5" style={{ maxWidth: 480 }}>
         {loadError ? (

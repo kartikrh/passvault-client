@@ -54,7 +54,7 @@ export default function AccountsPage() {
 
   return (
     <div className="min-vh-100">
-      <DashboardHeader client={client} />
+      <DashboardHeader client={client} onClientUpdated={setClient} />
 
       <Container fluid className="py-5 px-4">
         {vaultKeyReady === null ? <p className="text-muted">Checking your vault...</p> : null}

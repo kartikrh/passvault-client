@@ -79,6 +79,7 @@ export default function RevealAccountModal({
           <StepUpOtpPrompt
             description="Enter your authenticator code to view this account's details."
             entryId={entry.id}
+            entryName={entry.title}
             otpEnabled={otpEnabled}
             onVerified={handleVerified}
             onCancel={onClose}

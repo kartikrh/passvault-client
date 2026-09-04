@@ -5,13 +5,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Card, CardBody, CardHeader, Col, Container, Label, Row } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
 import { useFullProfile } from "@/lib/useFullProfile";
+import { useClientPackage } from "@/lib/useClientPackage";
 import { useWhitelabel } from "@/lib/useWhitelabel";
 import DashboardHeader from "@/components/DashboardHeader";
 import ProfileForm from "@/components/ProfileForm";
 import ContactInfoForm from "@/components/ContactInfoForm";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
+import SubscriptionCard from "@/components/SubscriptionCard";
 import VaultKeySetup from "@/components/VaultKeySetup";
-import RecentActivity from "@/components/RecentActivity";
 import TwoFactorSettings from "@/components/TwoFactorSettings";
 import ProfileSectionNav from "@/components/ProfileSectionNav";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
@@ -20,11 +21,11 @@ import AccountDangerZone from "@/components/AccountDangerZone";
 const SECTIONS = [
   { id: "profile-email", label: "Email" },
   { id: "profile-basics", label: "Profile" },
+  { id: "profile-subscription", label: "Subscription" },
   { id: "profile-contact", label: "Contact info" },
   { id: "profile-vault-key", label: "Vault security" },
   { id: "profile-2fa", label: "Two-factor authentication" },
   { id: "profile-drive", label: "Google Drive" },
-  { id: "profile-activity", label: "Recent activity" },
   { id: "profile-danger-zone", label: "Danger zone" },
 ];
 
@@ -37,6 +38,7 @@ export default function ProfilePage() {
   const cameFromVaultSetup = searchParams.get("setupVault") === "1";
   const { token, checked } = useAuthToken();
   const { client, setClient, error: loadError } = useFullProfile(!!token);
+  const { package: subscription, error: packageError } = useClientPackage(!!token);
   // Same whitelabel.googleKey the Drive OAuth client reuses server-side
   // (see PassVaultapi's services/vaultDrive.js) -- there is no separate
   // Drive-only client id anymore.
@@ -58,7 +60,7 @@ export default function ProfilePage() {
 
   return (
     <div className="min-vh-100">
-      <DashboardHeader client={client} />
+      <DashboardHeader client={client} onClientUpdated={setClient} />
 
       <Container fluid className="py-5 px-4">
         {loadError ? (
@@ -89,6 +91,13 @@ export default function ProfilePage() {
                 <CardHeader className="fw-semibold">Profile</CardHeader>
                 <CardBody>
                   <ProfileForm client={client} onUpdated={setClient} />
+                </CardBody>
+              </Card>
+
+              <Card className="mb-3" id="profile-subscription">
+                <CardHeader className="fw-semibold">Subscription</CardHeader>
+                <CardBody>
+                  <SubscriptionCard pkg={subscription} error={packageError} />
                 </CardBody>
               </Card>
 
@@ -125,13 +134,6 @@ export default function ProfilePage() {
                     connected={client?.driveConnected === true}
                     onConnected={() => setClient((prev) => prev && { ...prev, driveConnected: true })}
                   />
-                </CardBody>
-              </Card>
-
-              <Card className="mb-3" id="profile-activity">
-                <CardHeader className="fw-semibold">Recent activity</CardHeader>
-                <CardBody>
-                  <RecentActivity />
                 </CardBody>
               </Card>
 

@@ -25,6 +25,7 @@ export default function StepUpOtpPrompt({
   title = "Verify it's you",
   description = "Enter the 6-digit code from your authenticator app.",
   entryId,
+  entryName,
   otpEnabled = true,
   onVerified,
   onCancel,
@@ -51,6 +52,7 @@ export default function StepUpOtpPrompt({
       const { result } = await axiosInstance.post("/vault/auth/2fa/verify", {
         code,
         entryId,
+        entryName: entryId ? entryName : undefined,
         latitude: coords?.latitude ?? null,
         longitude: coords?.longitude ?? null,
       });

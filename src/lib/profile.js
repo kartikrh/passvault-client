@@ -13,6 +13,14 @@ export const fetchFullProfile = async () => {
   return result?.client || null;
 };
 
+// Returns null when the client has no package assigned yet (older
+// accounts predating packages) rather than throwing -- see
+// PassVaultapi's getClientPackageService.
+export const fetchClientPackage = async () => {
+  const { result } = await axiosInstance.get("/vault/auth/profile/package");
+  return result?.package || null;
+};
+
 // All fields optional -- pass only what changed. Username uniqueness (and
 // the real error message) is enforced server-side (PassVaultapi's
 // updateProfileService + sql/vault/003_client_username.sql's unique index);
