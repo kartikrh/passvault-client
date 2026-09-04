@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { Suspense, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Card, CardBody, CardHeader, Col, Container, Label, Row } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
@@ -29,7 +29,10 @@ const SECTIONS = [
   { id: "profile-danger-zone", label: "Danger zone" },
 ];
 
-export default function ProfilePage() {
+// useSearchParams() opts this subtree out of static rendering and requires a
+// Suspense boundary around it (see ProfilePage below) -- without one, `next
+// build`'s prerender step fails outright (dev mode never surfaces this).
+function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   // Set by useVault when /accounts found no vault key yet and sent the
@@ -148,5 +151,13 @@ export default function ProfilePage() {
         )}
       </Container>
     </div>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<ProfileSkeleton />}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

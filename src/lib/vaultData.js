@@ -31,23 +31,22 @@ const fetchVaultFile = async (vaultKey, vaultType) => {
   return { entries: decrypted.entries || [], revisionId: result.revisionId };
 };
 
-// Fetches both files and merges their entries into one array -- callers
-// (useVault) still get a single combined list to filter by type, exactly
-// like before the file split; only the revisionId (now one per file,
-// keyed by VaultFileKind) needs to travel separately alongside it.
-export const fetchVaultEntries = async () => {
+// Fetches only the requested file kind(s) and merges their entries into one
+// array -- callers (useVault) still get a single combined list to filter by
+// type, exactly like before the file split; only the revisionId (now one
+// per file, keyed by VaultFileKind) needs to travel separately alongside it.
+// Defaults to both for safety, but useVault's callers (Accounts/Notes pages)
+// each pass just their own file kind, so loading /accounts never also pulls
+// the Notes file from Drive, and vice versa.
+export const fetchVaultEntries = async (kinds = [VaultFileKind.ACCOUNTS, VaultFileKind.NOTES]) => {
   const vaultKey = await requireVaultKey();
-  const [accountsFile, notesFile] = await Promise.all([
-    fetchVaultFile(vaultKey, VaultFileKind.ACCOUNTS),
-    fetchVaultFile(vaultKey, VaultFileKind.NOTES),
-  ]);
-  return {
-    entries: [...accountsFile.entries, ...notesFile.entries],
-    revisionIds: {
-      [VaultFileKind.ACCOUNTS]: accountsFile.revisionId,
-      [VaultFileKind.NOTES]: notesFile.revisionId,
-    },
-  };
+  const files = await Promise.all(kinds.map((kind) => fetchVaultFile(vaultKey, kind)));
+  const entries = files.flatMap((file) => file.entries);
+  const revisionIds = {};
+  kinds.forEach((kind, index) => {
+    revisionIds[kind] = files[index].revisionId;
+  });
+  return { entries, revisionIds };
 };
 
 // Saves only the entries belonging to entryType's file (an Accounts write

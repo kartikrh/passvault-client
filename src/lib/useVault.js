@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { getVaultKeyStatus } from "./vaultKey";
 import {
   VaultEntryType,
+  VaultFileKind,
   fetchVaultEntries,
   addVaultAccount as addVaultAccountEntry,
   updateVaultAccount as updateVaultAccountEntry,
@@ -24,7 +25,12 @@ import {
 // client.driveConnected before it ever calls this hook. Pass
 // `client?.driveConnected ?? null` (null while the profile is still
 // loading, to match this hook's old "still checking" state).
-export function useVault(enabled, driveConnected) {
+// fileKind: which Drive file this page actually needs (VaultFileKind.ACCOUNTS
+// for /accounts, VaultFileKind.NOTES for /notes) -- loadEntries fetches only
+// that one file, so visiting Accounts never also pulls the Notes file from
+// Drive (and vice versa). Defaults to both for any future caller that wants
+// the old combined behavior.
+export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCOUNTS, VaultFileKind.NOTES]) {
   const router = useRouter();
   const [vaultKeyReady, setVaultKeyReady] = useState(null); // null=checking, false=redirecting to /profile, true=ready
   const [entries, setEntries] = useState([]);
@@ -33,12 +39,13 @@ export function useVault(enabled, driveConnected) {
   const [revisionIds, setRevisionIds] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const fileKinds = useMemo(() => (Array.isArray(fileKind) ? fileKind : [fileKind]), [fileKind]);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const { entries: loaded, revisionIds: revs } = await fetchVaultEntries();
+      const { entries: loaded, revisionIds: revs } = await fetchVaultEntries(fileKinds);
       setEntries(loaded);
       setRevisionIds(revs);
     } catch (err) {
@@ -46,7 +53,7 @@ export function useVault(enabled, driveConnected) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fileKinds]);
 
   // Step 1: has this client set up its vault encryption key yet? If not,
   // send them to Profile to do that first -- account info is only ever

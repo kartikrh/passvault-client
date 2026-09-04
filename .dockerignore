@@ -1,0 +1,33 @@
+# Version control
+.git
+.gitignore
+.github
+
+# Node
+node_modules
+npm-debug.log*
+.npm
+
+# Next.js build output (rebuilt in the image)
+.next
+out
+
+# Env / secrets -- never bake into image; runtime values come from Railway
+.env
+.env.*
+
+# Local dev / IDE
+.vscode
+.idea
+*.swp
+.DS_Store
+
+# Docs
+README.md
+AGENTS.md
+CLAUDE.md
+*.md
+
+# Docker
+Dockerfile*
+.dockerignore

@@ -7,6 +7,7 @@ import { useAuthToken } from "@/lib/useAuthToken";
 import { useProfile } from "@/lib/useProfile";
 import { useWhitelabel } from "@/lib/useWhitelabel";
 import { useVault } from "@/lib/useVault";
+import { VaultFileKind } from "@/lib/vaultData";
 import DashboardHeader from "@/components/DashboardHeader";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
 import NotesGrid from "@/components/NotesGrid";
@@ -31,7 +32,7 @@ export default function NotesPage() {
     deleteEntry,
     onDriveConnected,
     refresh,
-  } = useVault(!!token, client?.driveConnected ?? null);
+  } = useVault(!!token, client?.driveConnected ?? null, VaultFileKind.NOTES);
 
   useEffect(() => {
     if (checked && !token) {
