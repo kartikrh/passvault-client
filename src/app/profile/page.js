@@ -1,11 +1,13 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Alert, Card, CardBody, CardHeader, Col, Container, Label, Row } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
 import { useFullProfile } from "@/lib/useFullProfile";
 import { useClientPackage } from "@/lib/useClientPackage";
+import { useMyUpgradeRequest } from "@/lib/useMyUpgradeRequest";
+import UpgradePlanModal from "@/components/UpgradePlanModal";
 import { useWhitelabel } from "@/lib/useWhitelabel";
 import DashboardHeader from "@/components/DashboardHeader";
 import ProfileForm from "@/components/ProfileForm";
@@ -42,6 +44,8 @@ function ProfilePageContent() {
   const { token, checked } = useAuthToken();
   const { client, setClient, error: loadError } = useFullProfile(!!token);
   const { package: subscription, error: packageError } = useClientPackage(!!token);
+  const { request: upgradeRequest, refetch: refetchUpgradeRequest } = useMyUpgradeRequest(!!token);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   // Same whitelabel.googleKey the Drive OAuth client reuses server-side
   // (see PassVaultapi's services/vaultDrive.js) -- there is no separate
   // Drive-only client id anymore.
@@ -101,8 +105,36 @@ function ProfilePageContent() {
                 <CardHeader className="fw-semibold">Subscription</CardHeader>
                 <CardBody>
                   <SubscriptionCard pkg={subscription} error={packageError} />
+
+                  {upgradeRequest?.status === "PENDING" ? (
+                    <Alert color="info" className="py-2 px-3 mt-3 mb-0">
+                      Your upgrade to <strong>{upgradeRequest.requestedPackageName}</strong> is pending review.
+                    </Alert>
+                  ) : (
+                    <>
+                      {upgradeRequest?.status === "REJECTED" ? (
+                        <Alert color="warning" className="py-2 px-3 mt-3 mb-3">
+                          Your last upgrade request was rejected
+                          {upgradeRequest.rejectionReason ? `: ${upgradeRequest.rejectionReason}` : "."}
+                        </Alert>
+                      ) : null}
+                      <div className="mt-3">
+                        <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowUpgradeModal(true)}>
+                          Upgrade plan
+                        </button>
+                      </div>
+                    </>
+                  )}
                 </CardBody>
               </Card>
+
+              {showUpgradeModal ? (
+                <UpgradePlanModal
+                  currentPackageId={subscription?.packageId}
+                  onClose={() => setShowUpgradeModal(false)}
+                  onSubmitted={refetchUpgradeRequest}
+                />
+              ) : null}
 
               <Card className="mb-3" id="profile-contact">
                 <CardHeader className="fw-semibold">Contact info</CardHeader>
