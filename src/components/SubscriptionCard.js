@@ -18,6 +18,9 @@ const formatPrice = (price, currency, intervalType, intervalCount) => {
 // convention (see PassVaultapi's getClientPackageQuery).
 const formatLimit = (value) => (value === null || value === undefined ? "Unlimited" : value);
 
+const formatExpiryDate = (expiryDate) =>
+  new Date(expiryDate).toLocaleDateString(undefined, { year: "numeric", month: "long", day: "numeric" });
+
 export default function SubscriptionCard({ pkg, error }) {
   if (error) {
     return <div className="alert alert-danger py-2 px-3 mb-0">{error}</div>;
@@ -46,6 +49,19 @@ export default function SubscriptionCard({ pkg, error }) {
           {formatPrice(pkg.price, pkg.currency, pkg.intervalType, pkg.intervalCount)}
         </Badge>
       </div>
+
+      {/* expiryDate is only present once a client has actually been
+          assigned this package after the expiry feature shipped -- older
+          assignments have no reliable "assigned at" date to compute one
+          from, so they render nothing here. */}
+      {pkg.expiryDate ? (
+        <div className="d-flex align-items-center gap-2 mb-2">
+          <span className="text-muted small">Expires on {formatExpiryDate(pkg.expiryDate)}</span>
+          <Badge color={pkg.isExpired ? "danger" : pkg.daysRemaining <= 7 ? "warning" : "success"} pill>
+            {pkg.isExpired ? "Expired" : `${pkg.daysRemaining} day${pkg.daysRemaining === 1 ? "" : "s"} remaining`}
+          </Badge>
+        </div>
+      ) : null}
 
       <div className="row text-center mt-3">
         <div className="col-4">
