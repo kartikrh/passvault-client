@@ -21,13 +21,18 @@ const GRID_STYLE = {
 // entries: note vault entries only (pre-filtered by the caller, see
 // useVault's `notes`). onAdd/onUpdate/onDelete mirror useVault's
 // addNote/updateNote/deleteEntry.
-export default function NotesGrid({ entries, onAdd, onUpdate, onDelete }) {
+// showHidden: whether the caller's HiddenEntriesToggle (in the page header)
+// has 2FA-verified and revealed notes saved with Hide=true -- this
+// component just respects that flag, same as VaultAccountList.
+export default function NotesGrid({ entries, onAdd, onUpdate, onDelete, showHidden }) {
   const [search, setSearch] = useState("");
   const [showArchived, setShowArchived] = useState(false);
 
   const filtered = useMemo(() => entries.filter((entry) => matchesSearch(entry, search)), [entries, search]);
-  const active = useMemo(() => filtered.filter((entry) => !entry.archived), [filtered]);
-  const archived = useMemo(() => filtered.filter((entry) => entry.archived), [filtered]);
+  const visible = useMemo(() => filtered.filter((entry) => !entry.hidden), [filtered]);
+  const hiddenEntries = useMemo(() => (showHidden ? filtered.filter((entry) => entry.hidden) : []), [filtered, showHidden]);
+  const active = useMemo(() => visible.filter((entry) => !entry.archived), [visible]);
+  const archived = useMemo(() => visible.filter((entry) => entry.archived), [visible]);
   const pinned = useMemo(() => active.filter((entry) => entry.pinned), [active]);
   const others = useMemo(() => active.filter((entry) => !entry.pinned), [active]);
 
@@ -45,6 +50,10 @@ export default function NotesGrid({ entries, onAdd, onUpdate, onDelete }) {
       {!entries.length ? <p className="text-muted mb-0">No notes yet -- add your first one above.</p> : null}
 
       {entries.length && !filtered.length ? <p className="text-muted mb-0">No notes match your search.</p> : null}
+
+      {filtered.length && !visible.length && !hiddenEntries.length ? (
+        <p className="text-muted mb-0">All matching notes are hidden -- use the eye icon above to show them.</p>
+      ) : null}
 
       {pinned.length ? (
         <div className="mb-4">
@@ -79,13 +88,13 @@ export default function NotesGrid({ entries, onAdd, onUpdate, onDelete }) {
       ) : null}
 
       {archived.length ? (
-        <div>
+        <div className="mb-4">
           <button
             type="button"
             className="btn btn-light btn-sm border mb-2"
             onClick={() => setShowArchived((v) => !v)}
           >
-            {showArchived ? "Hide" : "Show"} archived ({archived.length})
+            {showArchived ? "Hide" : "Show"} archived
           </button>
           {showArchived ? (
             <div style={GRID_STYLE}>
@@ -99,6 +108,22 @@ export default function NotesGrid({ entries, onAdd, onUpdate, onDelete }) {
               ))}
             </div>
           ) : null}
+        </div>
+      ) : null}
+
+      {hiddenEntries.length ? (
+        <div>
+          <h6 className="text-muted small text-uppercase mb-2">Hidden</h6>
+          <div style={GRID_STYLE}>
+            {hiddenEntries.map((entry) => (
+              <NoteCard
+                key={entry.id}
+                entry={entry}
+                onUpdate={(fields) => onUpdate(entry.id, fields)}
+                onDelete={() => onDelete(entry.id, entry.type)}
+              />
+            ))}
+          </div>
         </div>
       ) : null}
     </div>

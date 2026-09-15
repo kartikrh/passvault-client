@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Container } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
@@ -13,6 +13,7 @@ import DriveConnectionStatus from "@/components/DriveConnectionStatus";
 import NotesGrid from "@/components/NotesGrid";
 import NotesGridSkeleton from "@/components/NotesGridSkeleton";
 import RefreshButton from "@/components/RefreshButton";
+import HiddenEntriesToggle from "@/components/HiddenEntriesToggle";
 
 // Google Keep-style notes, living in the same encrypted vault as Accounts
 // (see useVault) -- gated the same way: vault key first, then Drive.
@@ -27,12 +28,15 @@ export default function NotesPage() {
     notes,
     loading,
     error,
+    driveReauthRequired,
     addNote,
     updateNote,
     deleteEntry,
     onDriveConnected,
     refresh,
   } = useVault(!!token, client?.driveConnected ?? null, VaultFileKind.NOTES);
+  const [hiddenRevealed, setHiddenRevealed] = useState(false);
+  const hiddenCount = useMemo(() => notes.filter((entry) => entry.hidden).length, [notes]);
 
   useEffect(() => {
     if (checked && !token) {
@@ -73,19 +77,54 @@ export default function NotesPage() {
           <p className="text-muted">Checking your Google Drive connection...</p>
         ) : null}
 
-        {vaultKeyReady && driveConnected ? (
+        {/* Same reasoning as accounts/page.js's reauth card -- the server
+            already dropped the dead refresh token, so `connected` is forced
+            false to show the Connect button again ahead of the next profile
+            reload. */}
+        {vaultKeyReady && driveConnected && driveReauthRequired ? (
+          <Card className="mb-3">
+            <CardBody className="p-4">
+              <p className="text-danger small mb-3">
+                Your Google Drive connection has expired or was revoked. Reconnect to keep using your vault.
+              </p>
+              <DriveConnectionStatus
+                googleClientId={whitelabel?.googleKey}
+                connected={false}
+                onConnected={handleDriveConnected}
+              />
+            </CardBody>
+          </Card>
+        ) : null}
+
+        {vaultKeyReady && driveConnected && !driveReauthRequired ? (
           <Card>
             <CardBody className="p-4">
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <h5 className="mb-0">Your notes</h5>
-                <RefreshButton onRefresh={refresh} />
+                <div className="d-flex align-items-center gap-2">
+                  <RefreshButton onRefresh={refresh} />
+                  <HiddenEntriesToggle
+                    count={hiddenCount}
+                    revealed={hiddenRevealed}
+                    otpEnabled={client?.otpEnabled}
+                    onReveal={() => setHiddenRevealed(true)}
+                    onHideAgain={() => setHiddenRevealed(false)}
+                    label="notes"
+                  />
+                </div>
               </div>
 
               {error ? <p className="text-danger small">{error}</p> : null}
               {loading ? (
                 <NotesGridSkeleton />
               ) : (
-                <NotesGrid entries={notes} onAdd={addNote} onUpdate={updateNote} onDelete={deleteEntry} />
+                <NotesGrid
+                  entries={notes}
+                  onAdd={addNote}
+                  onUpdate={updateNote}
+                  onDelete={deleteEntry}
+                  showHidden={hiddenRevealed}
+                />
               )}
             </CardBody>
           </Card>
