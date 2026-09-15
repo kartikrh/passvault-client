@@ -1,12 +1,16 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Card, CardBody, Container } from "reactstrap";
+import { Alert, Card, CardBody, CardHeader, Container } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
 import { useProfile } from "@/lib/useProfile";
+import { useClientPackage } from "@/lib/useClientPackage";
+import { useMyUpgradeRequest } from "@/lib/useMyUpgradeRequest";
 import DashboardHeader from "@/components/DashboardHeader";
+import SubscriptionCard from "@/components/SubscriptionCard";
+import UpgradePlanModal from "@/components/UpgradePlanModal";
 
 // Landing spot after sign-in. The mandatory setup wizard (username/2FA/
 // vault key/Drive -- see useOnboardingStatus/OnboardingWizardModal) is
@@ -17,6 +21,9 @@ export default function DashboardPage() {
   const router = useRouter();
   const { token, checked } = useAuthToken();
   const { client, setClient } = useProfile(!!token);
+  const { package: subscription, error: packageError } = useClientPackage(!!token);
+  const { request: upgradeRequest, refetch: refetchUpgradeRequest } = useMyUpgradeRequest(!!token);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
 
   useEffect(() => {
     if (checked && !token) {
@@ -41,6 +48,41 @@ export default function DashboardPage() {
             </Link>
           </CardBody>
         </Card>
+
+        <Card className="mx-auto mt-4" style={{ maxWidth: 480 }}>
+          <CardHeader className="fw-semibold">Current Plan</CardHeader>
+          <CardBody>
+            <SubscriptionCard pkg={subscription} error={packageError} />
+
+            {upgradeRequest?.status === "PENDING" ? (
+              <Alert color="info" className="py-2 px-3 mt-3 mb-0">
+                Your upgrade to <strong>{upgradeRequest.requestedPackageName}</strong> is pending review.
+              </Alert>
+            ) : (
+              <>
+                {upgradeRequest?.status === "REJECTED" ? (
+                  <Alert color="warning" className="py-2 px-3 mt-3 mb-3">
+                    Your last upgrade request was rejected
+                    {upgradeRequest.rejectionReason ? `: ${upgradeRequest.rejectionReason}` : "."}
+                  </Alert>
+                ) : null}
+                <div className="mt-3">
+                  <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowUpgradeModal(true)}>
+                    Upgrade plan
+                  </button>
+                </div>
+              </>
+            )}
+          </CardBody>
+        </Card>
+
+        {showUpgradeModal ? (
+          <UpgradePlanModal
+            currentPackageId={subscription?.packageId}
+            onClose={() => setShowUpgradeModal(false)}
+            onSubmitted={refetchUpgradeRequest}
+          />
+        ) : null}
       </Container>
     </div>
   );
