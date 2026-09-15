@@ -27,6 +27,7 @@ export default function NotesPage() {
     notes,
     loading,
     error,
+    driveReauthRequired,
     addNote,
     updateNote,
     deleteEntry,
@@ -73,7 +74,26 @@ export default function NotesPage() {
           <p className="text-muted">Checking your Google Drive connection...</p>
         ) : null}
 
-        {vaultKeyReady && driveConnected ? (
+        {/* Same reasoning as accounts/page.js's reauth card -- the server
+            already dropped the dead refresh token, so `connected` is forced
+            false to show the Connect button again ahead of the next profile
+            reload. */}
+        {vaultKeyReady && driveConnected && driveReauthRequired ? (
+          <Card className="mb-3">
+            <CardBody className="p-4">
+              <p className="text-danger small mb-3">
+                Your Google Drive connection has expired or was revoked. Reconnect to keep using your vault.
+              </p>
+              <DriveConnectionStatus
+                googleClientId={whitelabel?.googleKey}
+                connected={false}
+                onConnected={handleDriveConnected}
+              />
+            </CardBody>
+          </Card>
+        ) : null}
+
+        {vaultKeyReady && driveConnected && !driveReauthRequired ? (
           <Card>
             <CardBody className="p-4">
               <div className="d-flex align-items-center justify-content-between mb-3">

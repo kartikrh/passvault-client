@@ -35,6 +35,7 @@ axiosInstance.interceptors.response.use(
       return Promise.reject({
         message: data.error?.message || data.message || "Something went wrong.",
         title: data.title,
+        code: data.error?.code,
       });
     }
     if (data?.result?.token) {
@@ -47,6 +48,7 @@ axiosInstance.interceptors.response.use(
     return Promise.reject({
       message: data?.error?.message || data?.message || "Unable to reach the server. Please try again.",
       title: data?.title,
+      code: data?.error?.code,
     });
   }
 );

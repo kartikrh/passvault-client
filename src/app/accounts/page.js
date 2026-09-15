@@ -29,6 +29,7 @@ export default function AccountsPage() {
     accounts,
     loading,
     error,
+    driveReauthRequired,
     addAccount,
     updateAccount,
     deleteEntry,
@@ -78,7 +79,27 @@ export default function AccountsPage() {
           <p className="text-muted">Checking your Google Drive connection...</p>
         ) : null}
 
-        {vaultKeyReady && driveConnected ? (
+        {/* The server already dropped the dead refresh token (see
+            PassVaultapi's DRIVE_REAUTH_REQUIRED handling), so `connected` is
+            forced false here to show the Connect button again, even though
+            `driveConnected` (from the profile fetched before this happened)
+            still says true until the next profile reload. */}
+        {vaultKeyReady && driveConnected && driveReauthRequired ? (
+          <Card className="mb-3">
+            <CardBody className="p-4">
+              <p className="text-danger small mb-3">
+                Your Google Drive connection has expired or was revoked. Reconnect to keep using your vault.
+              </p>
+              <DriveConnectionStatus
+                googleClientId={whitelabel?.googleKey}
+                connected={false}
+                onConnected={handleDriveConnected}
+              />
+            </CardBody>
+          </Card>
+        ) : null}
+
+        {vaultKeyReady && driveConnected && !driveReauthRequired ? (
           <Card>
             <CardBody className="p-4">
               <div className="d-flex align-items-center justify-content-between mb-3">

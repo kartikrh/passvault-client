@@ -39,17 +39,31 @@ export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCO
   const [revisionIds, setRevisionIds] = useState({});
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  // True when a load/save failed specifically because PassVaultapi's stored
+  // Drive refresh token died (revoked, expired, or rotated whitelabel OAuth
+  // secret -- see PassVaultapi's DRIVE_REAUTH_REQUIRED) -- distinct from
+  // `error` so callers can show a "reconnect Google Drive" action instead of
+  // just the raw failure message, and from `driveConnected` because the
+  // server has already dropped the dead token by the time this arrives, so
+  // the next profile fetch will say `driveConnected: false` anyway; this is
+  // what lets the *current* page react immediately instead of waiting for one.
+  const [driveReauthRequired, setDriveReauthRequired] = useState(false);
   const fileKinds = useMemo(() => (Array.isArray(fileKind) ? fileKind : [fileKind]), [fileKind]);
 
   const loadEntries = useCallback(async () => {
     setLoading(true);
     setError(null);
+    setDriveReauthRequired(false);
     try {
       const { entries: loaded, revisionIds: revs } = await fetchVaultEntries(fileKinds);
       setEntries(loaded);
       setRevisionIds(revs);
     } catch (err) {
-      setError(err?.message || "Could not load your vault.");
+      if (err?.code === "DRIVE_REAUTH_REQUIRED") {
+        setDriveReauthRequired(true);
+      } else {
+        setError(err?.message || "Could not load your vault.");
+      }
     } finally {
       setLoading(false);
     }
@@ -152,6 +166,7 @@ export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCO
     notes,
     loading,
     error,
+    driveReauthRequired,
     addAccount,
     updateAccount,
     addNote,
