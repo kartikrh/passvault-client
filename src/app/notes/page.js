@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Container } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
@@ -13,6 +13,7 @@ import DriveConnectionStatus from "@/components/DriveConnectionStatus";
 import NotesGrid from "@/components/NotesGrid";
 import NotesGridSkeleton from "@/components/NotesGridSkeleton";
 import RefreshButton from "@/components/RefreshButton";
+import HiddenEntriesToggle from "@/components/HiddenEntriesToggle";
 
 // Google Keep-style notes, living in the same encrypted vault as Accounts
 // (see useVault) -- gated the same way: vault key first, then Drive.
@@ -34,6 +35,8 @@ export default function NotesPage() {
     onDriveConnected,
     refresh,
   } = useVault(!!token, client?.driveConnected ?? null, VaultFileKind.NOTES);
+  const [hiddenRevealed, setHiddenRevealed] = useState(false);
+  const hiddenCount = useMemo(() => notes.filter((entry) => entry.hidden).length, [notes]);
 
   useEffect(() => {
     if (checked && !token) {
@@ -98,14 +101,30 @@ export default function NotesPage() {
             <CardBody className="p-4">
               <div className="d-flex align-items-center justify-content-between mb-3">
                 <h5 className="mb-0">Your notes</h5>
-                <RefreshButton onRefresh={refresh} />
+                <div className="d-flex align-items-center gap-2">
+                  <RefreshButton onRefresh={refresh} />
+                  <HiddenEntriesToggle
+                    count={hiddenCount}
+                    revealed={hiddenRevealed}
+                    otpEnabled={client?.otpEnabled}
+                    onReveal={() => setHiddenRevealed(true)}
+                    onHideAgain={() => setHiddenRevealed(false)}
+                    label="notes"
+                  />
+                </div>
               </div>
 
               {error ? <p className="text-danger small">{error}</p> : null}
               {loading ? (
                 <NotesGridSkeleton />
               ) : (
-                <NotesGrid entries={notes} onAdd={addNote} onUpdate={updateNote} onDelete={deleteEntry} />
+                <NotesGrid
+                  entries={notes}
+                  onAdd={addNote}
+                  onUpdate={updateNote}
+                  onDelete={deleteEntry}
+                  showHidden={hiddenRevealed}
+                />
               )}
             </CardBody>
           </Card>

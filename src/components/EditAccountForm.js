@@ -19,6 +19,7 @@ export default function EditAccountForm({ entry, onSave, onCancel }) {
   const [url, setUrl] = useState(entry.url || "");
   const [securityQuestions, setSecurityQuestions] = useState(entry.securityQuestions || []);
   const [tags, setTags] = useState(entry.tags || []);
+  const [hidden, setHidden] = useState(entry.hidden || false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -48,6 +49,7 @@ export default function EditAccountForm({ entry, onSave, onCancel }) {
         url: url.trim(),
         securityQuestions: trimmedQuestions.filter((q) => q.question && q.answer),
         tags,
+        hidden,
       });
     } catch (err) {
       setError(err?.message || "Could not save this account. Please try again.");
@@ -90,6 +92,12 @@ export default function EditAccountForm({ entry, onSave, onCancel }) {
           <TagsEditor value={tags} onChange={setTags} />
 
           <SecurityQuestionsEditor value={securityQuestions} onChange={setSecurityQuestions} />
+
+          <FormGroup switch className="mb-0">
+            <Input type="switch" role="switch" checked={hidden} onChange={(e) => setHidden(e.target.checked)} />
+            <Label check>Hide this account</Label>
+            <div className="form-text">Hidden accounts are left out of your list until you show them with a 2FA code.</div>
+          </FormGroup>
         </ModalBody>
         <ModalFooter>
           <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>

@@ -14,6 +14,7 @@ export default function AddNoteForm({ onAdd }) {
   const [body, setBody] = useState("");
   const [color, setColor] = useState(null);
   const [tags, setTags] = useState([]);
+  const [hidden, setHidden] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -22,6 +23,7 @@ export default function AddNoteForm({ onAdd }) {
     setBody("");
     setColor(null);
     setTags([]);
+    setHidden(false);
     setError(null);
     setIsExpanded(false);
   };
@@ -34,7 +36,7 @@ export default function AddNoteForm({ onAdd }) {
     setError(null);
     setIsSaving(true);
     try {
-      await onAdd({ title: title.trim(), body: body.trim(), color, pinned: false, archived: false, tags });
+      await onAdd({ title: title.trim(), body: body.trim(), color, pinned: false, archived: false, tags, hidden });
       reset();
     } catch (err) {
       setError(err?.message || "Could not save this note. Please try again.");
@@ -78,7 +80,18 @@ export default function AddNoteForm({ onAdd }) {
           </div>
 
           <div className="d-flex align-items-center justify-content-between mt-2">
-            <NoteColorSwatches value={color} onChange={setColor} />
+            <div className="d-flex align-items-center gap-2">
+              <NoteColorSwatches value={color} onChange={setColor} />
+              <button
+                type="button"
+                className={`btn btn-sm border-0 bg-transparent ${hidden ? "text-primary" : "text-muted"}`}
+                onClick={() => setHidden((v) => !v)}
+                aria-label={hidden ? "Unhide this note" : "Hide this note"}
+                title={hidden ? "This note will be hidden -- click to unhide" : "Hide this note (requires 2FA to show later)"}
+              >
+                <i className={`bx ${hidden ? "bx-hide" : "bx-show"} fs-5`} />
+              </button>
+            </div>
             <div className="d-flex gap-2">
               <button type="button" className="btn btn-light btn-sm border" onClick={reset} disabled={isSaving}>
                 Cancel

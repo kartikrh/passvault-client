@@ -61,7 +61,15 @@ function AccountTableRow({ entry, onUpdate, onDelete, popupIntervalSeconds, otpE
   return (
     <>
       <tr>
-        <td className="fw-semibold">{entry.title}</td>
+        <td className="fw-semibold">
+          {entry.title}
+          {entry.hidden ? (
+            <span className="badge bg-light text-dark border ms-2 fw-normal">
+              <i className="bx bx-hide me-1" />
+              Hidden
+            </span>
+          ) : null}
+        </td>
         <td>
           {entry.tags?.length ? (
             <div className="d-flex flex-wrap gap-1">
@@ -158,9 +166,15 @@ function AccountTableRow({ entry, onUpdate, onDelete, popupIntervalSeconds, otpE
   );
 }
 
-export default function VaultAccountList({ entries, onUpdate, onDelete, popupIntervalSeconds, otpEnabled }) {
+// showHidden: whether the caller's HiddenEntriesToggle (in the page header)
+// has 2FA-verified and revealed entries saved with Hide=true -- this
+// component just respects that flag rather than tracking its own reveal
+// state, since the caller already has the full entries list to compute a
+// hidden count from for that header button.
+export default function VaultAccountList({ entries, onUpdate, onDelete, popupIntervalSeconds, otpEnabled, showHidden }) {
   const [search, setSearch] = useState("");
-  const filtered = useMemo(() => entries.filter((entry) => matchesSearch(entry, search)), [entries, search]);
+  const displayed = useMemo(() => (showHidden ? entries : entries.filter((entry) => !entry.hidden)), [entries, showHidden]);
+  const filtered = useMemo(() => displayed.filter((entry) => matchesSearch(entry, search)), [displayed, search]);
 
   if (!entries.length) {
     return <p className="text-muted mb-0">No accounts saved yet -- add your first one above.</p>;
@@ -199,8 +213,10 @@ export default function VaultAccountList({ entries, onUpdate, onDelete, popupInt
             </tbody>
           </table>
         </div>
-      ) : (
+      ) : search ? (
         <p className="text-muted mb-0">No accounts match your filter.</p>
+      ) : (
+        <p className="text-muted mb-0">All your accounts are hidden -- use the eye icon above to show them.</p>
       )}
     </div>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardBody, Container } from "reactstrap";
 import { useAuthToken } from "@/lib/useAuthToken";
@@ -14,6 +14,7 @@ import AddAccountForm from "@/components/AddAccountForm";
 import VaultAccountList from "@/components/VaultAccountList";
 import AccountListSkeleton from "@/components/AccountListSkeleton";
 import RefreshButton from "@/components/RefreshButton";
+import HiddenEntriesToggle from "@/components/HiddenEntriesToggle";
 
 // The vault's real home -- listing, filtering, adding, and editing saved
 // accounts. Gated the same way /dashboard used to be: vault key first (see
@@ -36,6 +37,8 @@ export default function AccountsPage() {
     onDriveConnected,
     refresh,
   } = useVault(!!token, client?.driveConnected ?? null, VaultFileKind.ACCOUNTS);
+  const [hiddenRevealed, setHiddenRevealed] = useState(false);
+  const hiddenCount = useMemo(() => accounts.filter((entry) => entry.hidden).length, [accounts]);
 
   useEffect(() => {
     if (checked && !token) {
@@ -107,6 +110,14 @@ export default function AccountsPage() {
                 <div className="d-flex align-items-center gap-2">
                   <RefreshButton onRefresh={refresh} />
                   <AddAccountForm onAdd={addAccount} />
+                  <HiddenEntriesToggle
+                    count={hiddenCount}
+                    revealed={hiddenRevealed}
+                    otpEnabled={client?.otpEnabled}
+                    onReveal={() => setHiddenRevealed(true)}
+                    onHideAgain={() => setHiddenRevealed(false)}
+                    label="accounts"
+                  />
                 </div>
               </div>
 
@@ -120,6 +131,7 @@ export default function AccountsPage() {
                   onDelete={deleteEntry}
                   popupIntervalSeconds={client?.popupIntervalSeconds}
                   otpEnabled={client?.otpEnabled}
+                  showHidden={hiddenRevealed}
                 />
               )}
             </CardBody>

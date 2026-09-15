@@ -17,6 +17,7 @@ export default function AddAccountForm({ onAdd }) {
   const [url, setUrl] = useState("");
   const [securityQuestions, setSecurityQuestions] = useState([]);
   const [tags, setTags] = useState([]);
+  const [hidden, setHidden] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
@@ -27,6 +28,7 @@ export default function AddAccountForm({ onAdd }) {
     setUrl("");
     setSecurityQuestions([]);
     setTags([]);
+    setHidden(false);
   };
 
   const closeForm = () => {
@@ -61,6 +63,7 @@ export default function AddAccountForm({ onAdd }) {
         url: url.trim(),
         securityQuestions: trimmedQuestions.filter((q) => q.question && q.answer),
         tags,
+        hidden,
       });
       closeForm();
     } catch (err) {
@@ -111,6 +114,12 @@ export default function AddAccountForm({ onAdd }) {
             <TagsEditor value={tags} onChange={setTags} />
 
             <SecurityQuestionsEditor value={securityQuestions} onChange={setSecurityQuestions} />
+
+            <FormGroup switch className="mb-0">
+              <Input type="switch" role="switch" checked={hidden} onChange={(e) => setHidden(e.target.checked)} />
+              <Label check>Hide this account</Label>
+              <div className="form-text">Hidden accounts are left out of your list until you show them with a 2FA code.</div>
+            </FormGroup>
           </ModalBody>
           <ModalFooter>
             <button type="submit" className="btn btn-primary btn-sm" disabled={isSaving}>

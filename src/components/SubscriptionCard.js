@@ -64,15 +64,11 @@ export default function SubscriptionCard({ pkg, error }) {
       ) : null}
 
       <div className="row text-center mt-3">
-        <div className="col-4">
+        <div className="col-6">
           <div className="fw-semibold">{formatLimit(pkg.maxAccounts)}</div>
           <div className="text-muted small">Accounts</div>
         </div>
-        <div className="col-4">
-          <div className="fw-semibold">{formatLimit(pkg.maxGroups)}</div>
-          <div className="text-muted small">Groups</div>
-        </div>
-        <div className="col-4">
+        <div className="col-6">
           <div className="fw-semibold">{formatLimit(pkg.maxNotes)}</div>
           <div className="text-muted small">Notes</div>
         </div>
