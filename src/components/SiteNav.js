@@ -75,8 +75,7 @@ export default function SiteNav({ pages }) {
           <nav className="d-none d-md-flex flex-wrap align-items-center gap-2 me-md-auto">{renderLinks()}</nav>
           <Link
             href={loginHref}
-            className="btn btn-sm fw-semibold flex-shrink-0"
-            style={{ backgroundColor: "var(--brand-accent-contrast, #ffffff)", color: "var(--bs-primary)", border: "none" }}
+            className="btn btn-primary btn-sm fw-semibold flex-shrink-0 px-3"
           >
             Log In
           </Link>

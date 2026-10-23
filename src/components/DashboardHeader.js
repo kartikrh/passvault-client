@@ -18,6 +18,7 @@ import { useIdleLogout } from "@/lib/useIdleLogout";
 import { IDLE_TIMEOUT_MS } from "@/lib/idleConfig";
 import { useVpnGuard } from "@/lib/useVpnGuard";
 import OnboardingWizardModal from "./OnboardingWizardModal";
+import PalettePicker from "@/components/PalettePicker";
 
 // Profile and Recent Activity live only in the account dropdown below
 // (Profile, Recent Activity, Change password, Log out) -- not duplicated
@@ -152,6 +153,13 @@ export default function DashboardHeader({ client, onClientUpdated }) {
           <i className="bx bx-lock-alt me-2" />
           Change password
         </DropdownItem>
+        <DropdownItem divider />
+        <DropdownItem header>Appearance</DropdownItem>
+        {/* Plain div, not a DropdownItem: picking a palette shouldn't close the menu. */}
+        <div className="px-3 pb-2">
+          <PalettePicker compact />
+        </div>
+        <DropdownItem divider />
         <DropdownItem onClick={handleLogout} className="text-danger">
           <i className="bx bx-log-out me-2" />
           Log out

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getVaultKeyStatus } from "./vaultKey";
+import { getVaultKeyStatus, unlockVault } from "./vaultKey";
 import {
   VaultEntryType,
   VaultFileKind,
@@ -32,7 +32,10 @@ import {
 // the old combined behavior.
 export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCOUNTS, VaultFileKind.NOTES]) {
   const router = useRouter();
-  const [vaultKeyReady, setVaultKeyReady] = useState(null); // null=checking, false=redirecting to /profile, true=ready
+  const [vaultKeyReady, setVaultKeyReady] = useState(null); // null=checking, false=redirecting or locked, true=unlocked
+  // Key is set up but not in this tab's memory yet -- the page shows
+  // VaultUnlockForm, which calls unlock() below.
+  const [vaultLocked, setVaultLocked] = useState(false);
   const [entries, setEntries] = useState([]);
   // One Drive revision id per file (Accounts+Groups, Notes -- see
   // vaultData.js's VaultFileKind), since each is now a separate file.
@@ -77,10 +80,15 @@ export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCO
     if (!enabled) return;
     let cancelled = false;
     getVaultKeyStatus()
-      .then(({ exists }) => {
+      .then(({ exists, unlocked }) => {
         if (cancelled) return;
         if (!exists) {
           router.replace("/profile?setupVault=1");
+          return;
+        }
+        if (!unlocked) {
+          setVaultKeyReady(false);
+          setVaultLocked(true);
           return;
         }
         setVaultKeyReady(true);
@@ -106,6 +114,13 @@ export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCO
   // succeeds -- the caller patches its own client.driveConnected (see
   // accounts/page.js), this just kicks the entries load off immediately
   // rather than waiting for that to flow back down as a prop.
+  // Throws (e.g. "Incorrect vault password") for VaultUnlockForm to show.
+  const unlock = useCallback(async (vaultPassword) => {
+    await unlockVault(vaultPassword);
+    setVaultLocked(false);
+    setVaultKeyReady(true);
+  }, []);
+
   const onDriveConnected = useCallback(() => {
     loadEntries();
   }, [loadEntries]);
@@ -160,6 +175,8 @@ export function useVault(enabled, driveConnected, fileKind = [VaultFileKind.ACCO
 
   return {
     vaultKeyReady,
+    vaultLocked,
+    unlock,
     driveConnected,
     entries,
     accounts,

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import CrystalIcon from "@/components/CrystalIcon";
 import { Card, CardBody, Col, Container, Row } from "reactstrap";
 
 // Rendered for the CMS "Home" page (isLink page with linkURL "Home", see
@@ -35,7 +36,8 @@ export default function HomeLanding({ page }) {
     <>
       <section className="bg-light">
         <Container fluid className="py-5 px-4 text-center">
-          <h1 className="display-5 fw-bold mb-3">
+          <CrystalIcon icon="bx-shield-quarter" size={88} className="mb-3" />
+          <h1 className="display-5 fw-bold mb-3 pv-holo-text">
             {page?.pageHeading || "Simple, Secure & Private"}
           </h1>
           <p className="lead text-muted mx-auto" style={{ maxWidth: 640 }}>
@@ -57,9 +59,9 @@ export default function HomeLanding({ page }) {
         <Row className="g-4">
           {FEATURES.map((feature) => (
             <Col key={feature.title} sm={6} lg={3}>
-              <Card className="h-100 border-0 shadow-sm">
+              <Card className="h-100">
                 <CardBody className="text-center p-4">
-                  <i className={`bx ${feature.icon} text-primary`} style={{ fontSize: "2.25rem" }} />
+                  <CrystalIcon icon={feature.icon} size={60} />
                   <h5 className="mt-3">{feature.title}</h5>
                   <p className="text-muted mb-0">{feature.desc}</p>
                 </CardBody>

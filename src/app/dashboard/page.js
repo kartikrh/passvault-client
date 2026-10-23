@@ -11,6 +11,7 @@ import { useMyUpgradeRequest } from "@/lib/useMyUpgradeRequest";
 import DashboardHeader from "@/components/DashboardHeader";
 import SubscriptionCard from "@/components/SubscriptionCard";
 import UpgradePlanModal from "@/components/UpgradePlanModal";
+import CrystalIcon from "@/components/CrystalIcon";
 
 // Landing spot after sign-in. The mandatory setup wizard (username/2FA/
 // vault key/Drive -- see useOnboardingStatus/OnboardingWizardModal) is
@@ -40,8 +41,10 @@ export default function DashboardPage() {
       <Container fluid className="py-5 px-4">
         <Card className="mx-auto" style={{ maxWidth: 480 }}>
           <CardBody className="p-4 text-center">
-            <i className="bx bx-shield-quarter text-primary" style={{ fontSize: "2.5rem" }} />
-            <h4 className="mt-3">Welcome{client?.name ? `, ${client.name}` : ""}</h4>
+            <CrystalIcon icon="bx-shield-quarter" size={72} />
+            <h4 className="mt-3">
+              Welcome{client?.name ? <>, <span className="pv-holo-text">{client.name}</span></> : ""}
+            </h4>
             <p className="text-muted">Manage your saved accounts and passwords.</p>
             <Link href="/accounts" className="btn btn-primary btn-sm">
               Go to your accounts
