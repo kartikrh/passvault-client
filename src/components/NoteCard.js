@@ -82,7 +82,7 @@ export default function NoteCard({ entry, onUpdate, onDelete }) {
   return (
     <>
       <div
-        className="border rounded p-3 h-100 d-flex flex-column"
+        className="pv-glass p-3 h-100 d-flex flex-column"
         style={{ backgroundColor: noteColorSwatch(entry.color) }}
       >
         <div className="flex-grow-1" onClick={openNote} role="button">

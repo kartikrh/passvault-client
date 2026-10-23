@@ -62,3 +62,22 @@ export const decryptVaultBlob = async (vaultKeyBase64, blobBase64) => {
   const plaintext = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, ciphertext);
   return JSON.parse(new TextDecoder().decode(plaintext));
 };
+
+// The key check stored server-side (tblClientVaultKey.wrKeyCheck): a fixed
+// marker encrypted with the vault key. It lets an unlock tell a wrong vault
+// password apart before touching the vault, without the server ever being
+// able to derive or test the key itself. Same format as a vault blob, so
+// passvault-mobile produces/reads it with its existing AES-GCM code.
+const KEY_CHECK_MARKER = "passvault-key-check-v1";
+
+export const createKeyCheck = (vaultKeyBase64) => encryptVaultBlob(vaultKeyBase64, { check: KEY_CHECK_MARKER });
+
+export const verifyKeyCheck = async (vaultKeyBase64, keyCheck) => {
+  try {
+    const decoded = await decryptVaultBlob(vaultKeyBase64, keyCheck);
+    return decoded?.check === KEY_CHECK_MARKER;
+  } catch {
+    // AES-GCM auth failure = wrong key.
+    return false;
+  }
+};

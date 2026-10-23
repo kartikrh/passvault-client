@@ -10,6 +10,7 @@ import { useVault } from "@/lib/useVault";
 import { VaultFileKind } from "@/lib/vaultData";
 import DashboardHeader from "@/components/DashboardHeader";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
+import VaultUnlockForm from "@/components/VaultUnlockForm";
 import NotesGrid from "@/components/NotesGrid";
 import NotesGridSkeleton from "@/components/NotesGridSkeleton";
 import RefreshButton from "@/components/RefreshButton";
@@ -24,6 +25,8 @@ export default function NotesPage() {
   const { whitelabel } = useWhitelabel();
   const {
     vaultKeyReady,
+    vaultLocked,
+    unlock,
     driveConnected,
     notes,
     loading,
@@ -60,6 +63,8 @@ export default function NotesPage() {
 
       <Container fluid className="py-5 px-4">
         {vaultKeyReady === null ? <p className="text-muted">Checking your vault...</p> : null}
+
+        {vaultLocked ? <VaultUnlockForm onUnlock={unlock} /> : null}
 
         {vaultKeyReady && driveConnected === false ? (
           <Card className="mb-3">

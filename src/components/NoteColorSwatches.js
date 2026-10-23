@@ -15,8 +15,16 @@ export const NOTE_COLORS = [
   { value: "gray", label: "Gray", swatch: "#e0e0e0" },
 ];
 
-export function noteColorSwatch(color) {
+// Picker swatch colour (opaque) for the colour dots.
+export function noteSwatchHex(color) {
   return NOTE_COLORS.find((c) => c.value === color)?.swatch || NOTE_COLORS[0].swatch;
+}
+
+// Note background: a translucent tint over the glass card (undefined for the
+// default colour, so the glass itself shows).
+export function noteColorSwatch(color) {
+  if (!color) return undefined;
+  return `color-mix(in srgb, ${noteSwatchHex(color)} 45%, transparent)`;
 }
 
 // value: string|null, onChange: (next) => void

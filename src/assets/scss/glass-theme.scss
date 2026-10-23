@@ -1,0 +1,674 @@
+// =============================================================================
+// PassVault glass / prism design system
+//
+// Palette tokens live on html[data-palette] (set by lib/palette.js); every
+// rule below reads only --pv-* tokens, so adding a palette is one block.
+// Bootstrap's own variables are re-pointed at the tokens, which re-themes the
+// stock components (text, links, borders, forms) without touching markup.
+// =============================================================================
+
+// ---- Palettes ---------------------------------------------------------------
+
+html[data-palette="amethyst"] {
+  --pv-bg-1: #12071f;
+  --pv-bg-2: #24123f;
+  --pv-bg-3: #3a1d5e;
+  --pv-orb-1: #7c3aed;
+  --pv-orb-2: #c026d3;
+  --pv-orb-3: #4f46e5;
+  --pv-shard: #e9d5ff;
+  --pv-shard-opacity: 0.07;
+
+  --pv-text: #f4eeff;
+  --pv-muted: rgba(236, 226, 255, 0.66);
+  --pv-heading: #ffffff;
+
+  --pv-accent: #8b5cf6;
+  --pv-accent-rgb: 139, 92, 246;
+  --pv-accent-strong: #6d28d9; // button fill, AA with white text
+  --pv-accent-2: #c026d3;
+  --pv-on-accent: #ffffff;
+  --pv-link: #d8b4fe;
+
+  --pv-glass-hi: rgba(255, 255, 255, 0.12);
+  --pv-glass-lo: rgba(255, 255, 255, 0.04);
+  --pv-glass-solid: rgba(36, 18, 63, 0.86); // menus/modals that need more opacity
+  --pv-glass-border: rgba(255, 255, 255, 0.16);
+  --pv-inner-hi: rgba(255, 255, 255, 0.22);
+  --pv-shadow: rgba(8, 2, 20, 0.6);
+  --pv-input-bg: rgba(255, 255, 255, 0.07);
+
+  --pv-holo-1: #c4b5fd;
+  --pv-holo-2: #f0abfc;
+  --pv-holo-3: #93c5fd;
+}
+
+html[data-palette="rose"] {
+  --pv-bg-1: #fff5f8;
+  --pv-bg-2: #fde4ee;
+  --pv-bg-3: #f5e1ec;
+  --pv-orb-1: #f9a8d4;
+  --pv-orb-2: #6ee7b7;
+  --pv-orb-3: #fbcfe8;
+  --pv-shard: #be185d;
+  --pv-shard-opacity: 0.06;
+
+  --pv-text: #3b1d2e;
+  --pv-muted: #85606f;
+  --pv-heading: #2a1220;
+
+  --pv-accent: #db2777;
+  --pv-accent-rgb: 219, 39, 119;
+  --pv-accent-strong: #047857; // emerald action colour
+  --pv-accent-2: #be185d;
+  --pv-on-accent: #ffffff;
+  --pv-link: #047857;
+
+  --pv-glass-hi: rgba(255, 255, 255, 0.72);
+  --pv-glass-lo: rgba(255, 255, 255, 0.42);
+  --pv-glass-solid: rgba(255, 247, 250, 0.92);
+  --pv-glass-border: rgba(255, 255, 255, 0.85);
+  --pv-inner-hi: rgba(255, 255, 255, 0.95);
+  --pv-shadow: rgba(157, 23, 77, 0.16);
+  --pv-input-bg: rgba(255, 255, 255, 0.6);
+
+  --pv-holo-1: #f9a8d4;
+  --pv-holo-2: #6ee7b7;
+  --pv-holo-3: #fde68a;
+}
+
+html[data-palette="frost"] {
+  --pv-bg-1: #f6f8fb;
+  --pv-bg-2: #e6ebf2;
+  --pv-bg-3: #dbe2ec;
+  --pv-orb-1: #cbd5e1;
+  --pv-orb-2: #e2e8f0;
+  --pv-orb-3: #94a3b8;
+  --pv-shard: #334155;
+  --pv-shard-opacity: 0.05;
+
+  --pv-text: #1e293b;
+  --pv-muted: #526074;
+  --pv-heading: #0f172a;
+
+  --pv-accent: #475569;
+  --pv-accent-rgb: 71, 85, 105;
+  --pv-accent-strong: #1e293b;
+  --pv-accent-2: #64748b;
+  --pv-on-accent: #ffffff;
+  --pv-link: #334155;
+
+  --pv-glass-hi: rgba(255, 255, 255, 0.7);
+  --pv-glass-lo: rgba(255, 255, 255, 0.38);
+  --pv-glass-solid: rgba(248, 250, 252, 0.92);
+  --pv-glass-border: rgba(255, 255, 255, 0.9);
+  --pv-inner-hi: rgba(255, 255, 255, 1);
+  --pv-shadow: rgba(15, 23, 42, 0.14);
+  --pv-input-bg: rgba(255, 255, 255, 0.62);
+
+  --pv-holo-1: #ffffff;
+  --pv-holo-2: #cbd5e1;
+  --pv-holo-3: #dbeafe;
+}
+
+// ---- Bootstrap re-pointing --------------------------------------------------
+
+html[data-palette] {
+  --bs-primary: var(--pv-accent-strong);
+  --bs-primary-rgb: var(--pv-accent-rgb);
+  --bs-body-color: var(--pv-text);
+  --bs-body-bg: var(--pv-bg-1);
+  --bs-secondary-color: var(--pv-muted);
+  --bs-heading-color: var(--pv-heading);
+  --bs-emphasis-color: var(--pv-heading);
+  --bs-link-color: var(--pv-link);
+  --bs-link-hover-color: var(--pv-accent);
+  --bs-border-color: var(--pv-glass-border);
+  --brand-accent-contrast: var(--pv-text); // header text sits on glass now
+  --pv-radius: 1.25rem;
+  --pv-blur: blur(22px) saturate(170%);
+  color-scheme: light;
+}
+
+html[data-bs-theme="dark"][data-palette] {
+  color-scheme: dark;
+}
+
+html[data-palette] body {
+  min-height: 100vh;
+  color: var(--pv-text);
+  background: linear-gradient(150deg, var(--pv-bg-1) 0%, var(--pv-bg-2) 55%, var(--pv-bg-3) 100%) fixed;
+}
+
+html[data-palette] h1,
+html[data-palette] h2,
+html[data-palette] h3,
+html[data-palette] h4,
+html[data-palette] h5,
+html[data-palette] h6 {
+  color: var(--pv-heading);
+}
+
+html[data-palette] .text-muted {
+  color: var(--pv-muted) !important;
+}
+
+html[data-palette] .text-dark {
+  color: var(--pv-text) !important;
+}
+
+html[data-palette] a:not(.btn) {
+  color: var(--pv-link);
+}
+
+// ---- Prism background -------------------------------------------------------
+
+.pv-prism-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.pv-orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.55;
+  animation: pv-drift 28s ease-in-out infinite alternate;
+}
+
+.pv-orb--1 {
+  width: 46vmax;
+  height: 46vmax;
+  top: -14vmax;
+  left: -10vmax;
+  background: radial-gradient(circle, var(--pv-orb-1), transparent 70%);
+}
+
+.pv-orb--2 {
+  width: 38vmax;
+  height: 38vmax;
+  bottom: -12vmax;
+  right: -8vmax;
+  background: radial-gradient(circle, var(--pv-orb-2), transparent 70%);
+  animation-duration: 34s;
+  animation-direction: alternate-reverse;
+}
+
+.pv-orb--3 {
+  width: 28vmax;
+  height: 28vmax;
+  top: 35%;
+  left: 45%;
+  background: radial-gradient(circle, var(--pv-orb-3), transparent 70%);
+  opacity: 0.4;
+  animation-duration: 40s;
+}
+
+.pv-shards {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pv-shard {
+  fill: var(--pv-shard);
+  stroke: var(--pv-shard);
+  stroke-width: 1;
+  fill-opacity: var(--pv-shard-opacity);
+  stroke-opacity: calc(var(--pv-shard-opacity) * 2.5);
+}
+
+.pv-shard--1 {
+  fill-opacity: calc(var(--pv-shard-opacity) * 0.5);
+}
+
+.pv-shard--2 {
+  fill: none;
+}
+
+@keyframes pv-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(6vmax, 4vmax, 0) scale(1.12);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-orb {
+    animation: none;
+  }
+}
+
+// ---- Glass surfaces ---------------------------------------------------------
+
+@mixin pv-glass($radius: var(--pv-radius)) {
+  background: linear-gradient(145deg, var(--pv-glass-hi), var(--pv-glass-lo));
+  -webkit-backdrop-filter: var(--pv-blur);
+  backdrop-filter: var(--pv-blur);
+  border: 1px solid var(--pv-glass-border);
+  border-radius: $radius;
+  // soft outer depth + a 1px inner highlight along the top edge
+  box-shadow:
+    0 18px 50px -20px var(--pv-shadow),
+    inset 0 1px 0 0 var(--pv-inner-hi);
+}
+
+html[data-palette] .card,
+html[data-palette] .pv-glass {
+  @include pv-glass;
+  --bs-card-bg: transparent;
+  --bs-card-cap-bg: transparent;
+  --bs-card-border-color: var(--pv-glass-border);
+  color: var(--pv-text);
+}
+
+html[data-palette] .card-header,
+html[data-palette] .card-footer {
+  background: transparent;
+  border-color: var(--pv-glass-border);
+  color: var(--pv-heading);
+}
+
+html[data-palette] .modal-content,
+html[data-palette] .dropdown-menu,
+html[data-palette] .offcanvas,
+html[data-palette] .popover {
+  @include pv-glass(1rem);
+  background: var(--pv-glass-solid);
+  --bs-dropdown-bg: transparent;
+  --bs-dropdown-link-color: var(--pv-text);
+  --bs-dropdown-link-hover-bg: rgba(var(--pv-accent-rgb), 0.14);
+  --bs-dropdown-link-hover-color: var(--pv-heading);
+  --bs-dropdown-divider-bg: var(--pv-glass-border);
+  --bs-modal-bg: transparent;
+  color: var(--pv-text);
+}
+
+html[data-palette] .modal-header,
+html[data-palette] .modal-footer {
+  border-color: var(--pv-glass-border);
+}
+
+html[data-palette] .modal-backdrop.show {
+  opacity: 0.55;
+}
+
+html[data-palette] .dropdown-item {
+  color: var(--pv-text);
+  border-radius: 0.6rem;
+}
+
+html[data-palette] .dropdown-menu {
+  padding: 0.4rem;
+}
+
+// Sticky header (DashboardHeader / SiteNav): a frosted bar, not a solid fill.
+html[data-palette] header.bg-primary,
+html[data-palette] .pv-glass-header {
+  background: linear-gradient(180deg, var(--pv-glass-hi), var(--pv-glass-lo)) !important;
+  -webkit-backdrop-filter: var(--pv-blur);
+  backdrop-filter: var(--pv-blur);
+  border-bottom: 1px solid var(--pv-glass-border);
+  box-shadow: 0 8px 30px -18px var(--pv-shadow) !important;
+}
+
+// Section bands on the public landing page.
+html[data-palette] section.bg-light,
+html[data-palette] section.bg-primary {
+  background: transparent !important;
+}
+
+html[data-palette] .min-vh-100.bg-primary {
+  background: transparent !important;
+}
+
+// Tables inside glass cards.
+html[data-palette] .table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--pv-text);
+  --bs-table-border-color: var(--pv-glass-border);
+  --bs-table-hover-bg: rgba(var(--pv-accent-rgb), 0.08);
+  --bs-table-hover-color: var(--pv-heading);
+  color: var(--pv-text);
+}
+
+html[data-palette] .table > :not(caption) > * > * {
+  background-color: transparent;
+  color: inherit;
+}
+
+html[data-palette] .table thead th {
+  color: var(--pv-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+}
+
+// Badges / list groups / alerts as tinted glass.
+html[data-palette] .badge.bg-light {
+  background: var(--pv-input-bg) !important;
+  color: var(--pv-text) !important;
+  border-color: var(--pv-glass-border) !important;
+}
+
+html[data-palette] .list-group-item {
+  background: transparent;
+  color: var(--pv-text);
+  border-color: var(--pv-glass-border);
+}
+
+html[data-palette] .alert {
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border-radius: 0.9rem;
+}
+
+html[data-palette] .border {
+  border-color: var(--pv-glass-border) !important;
+}
+
+// ---- Forms ------------------------------------------------------------------
+
+html[data-palette] .form-control,
+html[data-palette] .form-select {
+  background-color: var(--pv-input-bg);
+  color: var(--pv-text);
+  border: 1px solid var(--pv-glass-border);
+  border-radius: 0.8rem;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+
+  &::placeholder {
+    color: var(--pv-muted);
+    opacity: 0.8;
+  }
+
+  &:focus {
+    background-color: var(--pv-input-bg);
+    color: var(--pv-text);
+    border-color: var(--pv-accent) !important;
+    box-shadow: 0 0 0 0.25rem rgba(var(--pv-accent-rgb), 0.25) !important;
+  }
+
+  &:disabled,
+  &[readonly] {
+    background-color: transparent;
+    color: var(--pv-muted);
+  }
+}
+
+html[data-palette] .form-check-input {
+  background-color: var(--pv-input-bg);
+  border-color: var(--pv-glass-border);
+
+  &:checked {
+    background-color: var(--pv-accent-strong);
+    border-color: var(--pv-accent-strong);
+  }
+}
+
+html[data-palette] .form-label {
+  color: var(--pv-text);
+}
+
+// ---- Buttons ----------------------------------------------------------------
+
+// Holographic primary: accent gradient with a light sweep on hover.
+html[data-palette] .btn-primary,
+html[data-palette] .btn-primary:focus,
+html[data-palette] .btn-primary:active,
+html[data-palette] .btn-primary.disabled,
+html[data-palette] .btn-primary:disabled {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(120deg, var(--pv-accent-strong), var(--pv-accent-2)) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: var(--pv-on-accent) !important;
+  border-radius: 0.8rem;
+  box-shadow:
+    0 8px 22px -10px rgba(var(--pv-accent-rgb), 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.2s ease;
+}
+
+html[data-palette] .btn-primary::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 30%, rgba(255, 255, 255, 0.35) 50%, transparent 70%);
+  transform: translateX(-120%);
+  transition: transform 0.6s ease;
+  pointer-events: none;
+}
+
+html[data-palette] .btn-primary:hover:not(:disabled) {
+  background: linear-gradient(120deg, var(--pv-accent-strong), var(--pv-accent-2)) !important;
+  color: var(--pv-on-accent) !important;
+  border-color: rgba(255, 255, 255, 0.35) !important;
+  transform: translateY(-1px);
+  box-shadow:
+    0 12px 28px -10px rgba(var(--pv-accent-rgb), 0.9),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  &::after {
+    transform: translateX(120%);
+  }
+}
+
+html[data-palette] .btn-light,
+html[data-palette] .btn-outline-secondary,
+html[data-palette] .btn-secondary {
+  background: var(--pv-input-bg);
+  color: var(--pv-text);
+  border: 1px solid var(--pv-glass-border) !important;
+  border-radius: 0.8rem;
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+
+  &:hover,
+  &:focus,
+  &:active {
+    background: rgba(var(--pv-accent-rgb), 0.14) !important;
+    color: var(--pv-heading) !important;
+  }
+}
+
+html[data-palette] .btn-outline-primary {
+  color: var(--pv-link);
+  border-color: rgba(var(--pv-accent-rgb), 0.6);
+  border-radius: 0.8rem;
+
+  &:hover {
+    background: rgba(var(--pv-accent-rgb), 0.16);
+    color: var(--pv-heading);
+    border-color: var(--pv-accent);
+  }
+}
+
+html[data-palette] .btn-link {
+  color: var(--pv-link);
+}
+
+html[data-palette] .btn-close {
+  filter: var(--pv-btn-close-filter, none);
+}
+
+html[data-bs-theme="dark"][data-palette] {
+  --pv-btn-close-filter: invert(1) grayscale(100%) brightness(200%);
+}
+
+// Avatar dot in the header dropdown toggle.
+html[data-palette] .bg-primary.rounded-circle,
+html[data-palette] header .bg-primary.d-inline-flex {
+  background: linear-gradient(135deg, var(--pv-accent-strong), var(--pv-accent-2)) !important;
+}
+
+// ---- Crystal icon -----------------------------------------------------------
+
+.pv-crystal {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  filter: drop-shadow(0 10px 18px rgba(var(--pv-accent-rgb, 99, 102, 241), 0.35));
+
+  svg {
+    position: absolute;
+    inset: 0;
+  }
+}
+
+.pv-crystal-glyph {
+  position: relative;
+  color: #ffffff;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.35);
+}
+
+// Holographic text accent (headlines).
+.pv-holo-text {
+  background: linear-gradient(100deg, var(--pv-holo-1), var(--pv-holo-2), var(--pv-holo-3), var(--pv-holo-1));
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: pv-holo-shift 12s linear infinite;
+}
+
+html[data-palette="rose"] .pv-holo-text,
+html[data-palette="frost"] .pv-holo-text {
+  background-image: linear-gradient(100deg, var(--pv-accent-2), var(--pv-accent-strong), var(--pv-accent), var(--pv-accent-2));
+}
+
+@keyframes pv-holo-shift {
+  to {
+    background-position: 300% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pv-holo-text {
+    animation: none;
+  }
+}
+
+// ---- Palette picker ---------------------------------------------------------
+
+.pv-palette-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.75rem;
+}
+
+.pv-palette-picker--compact {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pv-palette-option {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  text-align: left;
+  color: var(--pv-text);
+  background: var(--pv-input-bg);
+  border: 1px solid var(--pv-glass-border);
+  border-radius: 0.9rem;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease;
+
+  &:hover {
+    transform: translateY(-1px);
+  }
+
+  &.is-selected {
+    border-color: var(--pv-accent);
+    box-shadow: 0 0 0 3px rgba(var(--pv-accent-rgb), 0.3);
+  }
+}
+
+.pv-palette-picker--compact .pv-palette-option {
+  padding: 0.25rem;
+  border-radius: 50%;
+}
+
+.pv-palette-swatch {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  // faceted swatch: a clipped hexagon, echoing the crystal icon
+  clip-path: polygon(50% 0, 100% 25%, 100% 75%, 50% 100%, 0 75%, 0 25%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+}
+
+.pv-palette-picker--compact .pv-palette-swatch {
+  width: 24px;
+  height: 24px;
+}
+
+// ---- Fallback when backdrop-filter isn't supported --------------------------
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  html[data-palette] .card,
+  html[data-palette] .pv-glass,
+  html[data-palette] header.bg-primary {
+    background: var(--pv-glass-solid) !important;
+  }
+}
+
+// ---- Refinements --------------------------------------------------------------
+
+// Headline gradient text must beat the html[data-palette] hN colour rule.
+html[data-palette] .pv-holo-text {
+  color: transparent !important;
+  -webkit-text-fill-color: transparent;
+}
+
+// Progress bars (onboarding wizard, plan usage): accent gradient, glass track.
+html[data-palette] .progress {
+  --bs-progress-bg: rgba(var(--pv-accent-rgb), 0.15);
+  border-radius: 999px;
+}
+
+html[data-palette] .progress-bar,
+html[data-palette] .bg-success.progress-bar {
+  background: linear-gradient(90deg, var(--pv-accent-strong), var(--pv-accent-2)) !important;
+}
+
+// Brighter refraction source behind the glass.
+html[data-palette] .pv-orb {
+  opacity: 0.75;
+  filter: blur(70px);
+}
+
+html[data-palette="amethyst"] .pv-orb--3 {
+  opacity: 0.55;
+}
+
+// Crystal body colours: jewel-toned per palette (light holo edges, saturated core).
+html[data-palette="amethyst"] {
+  --pv-crystal-mid: #a855f7;
+  --pv-crystal-deep: #6d28d9;
+}
+
+html[data-palette="rose"] {
+  --pv-crystal-mid: #34d399;
+  --pv-crystal-deep: #f472b6;
+}
+
+html[data-palette="frost"] {
+  --pv-crystal-mid: #94a3b8;
+  --pv-crystal-deep: #475569;
+}

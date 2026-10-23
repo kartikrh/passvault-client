@@ -46,7 +46,7 @@ export default function AddNoteForm({ onAdd }) {
   };
 
   return (
-    <div className="border rounded p-3 mb-4" style={{ backgroundColor: color ? undefined : "#fff" }}>
+    <div className="pv-glass p-3 mb-4">
       {error ? (
         <Alert color="danger" className="py-2 px-3">
           {error}

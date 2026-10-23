@@ -23,8 +23,8 @@ const STEP_ORDER = [OnboardingStep.PROFILE, OnboardingStep.OTP_SETUP, Onboarding
 // Vault-key status still needs its own check -- it lives in
 // tblClientVaultKey, not tblClient, so it can't ride along with the
 // profile fetch the way driveConnected now does (see PassVaultapi's
-// CLIENT_SELECT_COLUMNS). getVaultKeyStatus() is already sessionStorage-
-// cached, so calling it from both here and useVault is cheap.
+// CLIENT_SELECT_COLUMNS). getVaultKeyStatus() answers from memory once the
+// vault is unlocked, otherwise it is one small POST /vault/key/params.
 //
 // driveConnected, on the other hand, is read straight off `client` --
 // every page already fetches that via useProfile/useFullProfile, and

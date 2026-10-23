@@ -19,12 +19,14 @@ import TwoFactorSettings from "@/components/TwoFactorSettings";
 import ProfileSectionNav from "@/components/ProfileSectionNav";
 import ProfileSkeleton from "@/components/ProfileSkeleton";
 import AccountDangerZone from "@/components/AccountDangerZone";
+import PalettePicker from "@/components/PalettePicker";
 
 const SECTIONS = [
   { id: "profile-email", label: "Email" },
   { id: "profile-basics", label: "Profile" },
   { id: "profile-subscription", label: "Subscription" },
   { id: "profile-contact", label: "Contact info" },
+  { id: "profile-appearance", label: "Appearance" },
   { id: "profile-vault-key", label: "Vault security" },
   { id: "profile-2fa", label: "Two-factor authentication" },
   { id: "profile-drive", label: "Google Drive" },
@@ -140,6 +142,14 @@ function ProfilePageContent() {
                 <CardHeader className="fw-semibold">Contact info</CardHeader>
                 <CardBody>
                   <ContactInfoForm client={client} onUpdated={setClient} />
+                </CardBody>
+              </Card>
+
+              <Card className="mb-3" id="profile-appearance">
+                <CardHeader className="fw-semibold">Appearance</CardHeader>
+                <CardBody>
+                  <p className="text-muted small">Choose a colour palette. It&apos;s remembered on this browser.</p>
+                  <PalettePicker />
                 </CardBody>
               </Card>
 
