@@ -33,7 +33,7 @@ export default function PasswordStrengthMeter({ password }) {
               height: 4,
               flex: 1,
               borderRadius: 2,
-              backgroundColor: i < filled ? color : "#e9ecef",
+              backgroundColor: i < filled ? color : "rgba(var(--pv-accent-rgb, 108, 117, 125), 0.2)",
             }}
           />
         ))}

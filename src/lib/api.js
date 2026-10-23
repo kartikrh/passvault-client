@@ -10,14 +10,36 @@ const axiosInstance = axios.create({
 });
 
 export const VAULT_TOKEN_KEY = "passvault.clientToken";
+// Where builds before the zero-knowledge change cached the raw vault key --
+// still removed on sign-out so an old cached copy can't linger.
+const LEGACY_VAULT_KEY_STORAGE = "passvault.vaultKey";
+
+// Modules holding per-session secrets (vaultKey.js's in-memory key) register
+// here; this module can't import them directly (they import it).
+const sessionClearedListeners = new Set();
+export const onSessionCleared = (listener) => {
+  sessionClearedListeners.add(listener);
+};
 
 export const getStoredToken = () =>
   typeof window !== "undefined" ? localStorage.getItem(VAULT_TOKEN_KEY) : null;
 
 export const setStoredToken = (token) => {
   if (typeof window === "undefined") return;
-  if (token) localStorage.setItem(VAULT_TOKEN_KEY, token);
-  else localStorage.removeItem(VAULT_TOKEN_KEY);
+  if (token) {
+    localStorage.setItem(VAULT_TOKEN_KEY, token);
+    return;
+  }
+  localStorage.removeItem(VAULT_TOKEN_KEY);
+  // Every sign-out path (manual, idle, VPN, suspend/delete) ends here, so the
+  // vault key must go with the session -- otherwise it outlives the logout
+  // in this tab.
+  sessionClearedListeners.forEach((listener) => listener());
+  try {
+    sessionStorage.removeItem(LEGACY_VAULT_KEY_STORAGE);
+  } catch {
+    // storage disabled -- nothing cached to clear
+  }
 };
 
 axiosInstance.interceptors.request.use((config) => {

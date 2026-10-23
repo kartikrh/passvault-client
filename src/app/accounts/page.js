@@ -10,6 +10,7 @@ import { useVault } from "@/lib/useVault";
 import { VaultFileKind } from "@/lib/vaultData";
 import DashboardHeader from "@/components/DashboardHeader";
 import DriveConnectionStatus from "@/components/DriveConnectionStatus";
+import VaultUnlockForm from "@/components/VaultUnlockForm";
 import AddAccountForm from "@/components/AddAccountForm";
 import VaultAccountList from "@/components/VaultAccountList";
 import AccountListSkeleton from "@/components/AccountListSkeleton";
@@ -26,6 +27,8 @@ export default function AccountsPage() {
   const { whitelabel } = useWhitelabel();
   const {
     vaultKeyReady,
+    vaultLocked,
+    unlock,
     driveConnected,
     accounts,
     loading,
@@ -63,6 +66,8 @@ export default function AccountsPage() {
 
       <Container fluid className="py-5 px-4">
         {vaultKeyReady === null ? <p className="text-muted">Checking your vault...</p> : null}
+
+        {vaultLocked ? <VaultUnlockForm onUnlock={unlock} /> : null}
 
         {/* Drive must be connected before a vault can exist -- once it is,
             this prompt has nothing left to say and gets out of the way. */}

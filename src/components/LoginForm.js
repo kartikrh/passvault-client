@@ -24,6 +24,7 @@ import axiosInstance from "@/lib/api";
 import { useWhitelabel } from "@/lib/useWhitelabel";
 import { useGeolocation } from "@/lib/useGeolocation";
 import TwoFactorChallenge from "@/components/TwoFactorChallenge";
+import CrystalIcon from "@/components/CrystalIcon";
 import LocationRequiredModal from "@/components/LocationRequiredModal";
 
 // Same hydration-safe pattern as useAuthToken.js: getServerSnapshot always
@@ -196,8 +197,9 @@ export default function LoginForm() {
             <Card>
               <CardBody className="p-4">
                 <div className="text-center">
-                  <Link href="/" className="text-decoration-none">
-                    <h3 className="text-primary fw-bold mb-0">PassVault</h3>
+                  <Link href="/" className="text-decoration-none d-inline-flex flex-column align-items-center gap-2">
+                    <CrystalIcon icon="bx-lock-alt" size={64} />
+                    <h3 className="fw-bold mb-0 pv-holo-text">PassVault</h3>
                   </Link>
                 </div>
                 {otpChallenge ? (

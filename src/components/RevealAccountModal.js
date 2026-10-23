@@ -119,9 +119,14 @@ export default function RevealAccountModal({
                   <dd className="text-break">
                     {/* noopener/noreferrer: opening a saved third-party URL
                         shouldn't hand it a handle back to this window. */}
-                    <a href={entry.url} target="_blank" rel="noopener noreferrer">
-                      {entry.url}
-                    </a>
+                    {/^https?:\/\//i.test(entry.url) ? (
+                      <a href={entry.url} target="_blank" rel="noopener noreferrer">
+                        {entry.url}
+                      </a>
+                    ) : (
+                      // Not http(s) (e.g. javascript:) -- show it, never link it.
+                      entry.url
+                    )}
                   </dd>
                 </>
               ) : null}
